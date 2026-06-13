@@ -1,0 +1,48 @@
+# ============================================
+#  KAIZEN — .gitignore
+#  Todo lo que aparece aquí NO se sube a GitHub
+# ============================================
+
+# --- SECRETOS Y CREDENCIALES (lo más importante) ---
+# Los .env contienen datos sensibles (URLs, claves, tokens).
+# NUNCA deben subirse a un repo público.
+.env
+.env.local
+*.env
+backend/.env
+frontend/.env
+
+# --- BASE DE DATOS ---
+# Tu base de datos local con tus datos personales.
+*.db
+*.sqlite
+*.sqlite3
+backend/kaizen.db
+
+# --- PYTHON ---
+__pycache__/
+*.py[cod]
+*.pyc
+venv/
+env/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# --- NODE / FRONTEND ---
+node_modules/
+dist/
+build/
+.vite/
+*.log
+npm-debug.log*
+
+# --- EDITOR / SISTEMA ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- VARIOS ---
+*.tmp
+*.bak
