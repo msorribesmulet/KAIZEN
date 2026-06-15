@@ -7,7 +7,7 @@ App de seguimiento nutricional para control de calorías y macros. Calcula el ga
 ## Características
 
 - Cálculo de TDEE (gasto energético total diario) con la fórmula de Mifflin-St Jeor
-- Distribución de macros según objetivo de déficit calórico
+- Objetivo calórico ajustable según el ritmo de pérdida o ganancia de peso deseado
 - Registro de alimentos con valores nutricionales por 100g
 - Cálculo automático de macros según los gramos consumidos
 - Historial de alimentos reutilizable — los datos se guardan y se autocompletan
@@ -101,15 +101,21 @@ El BMR solo cubre el metabolismo en reposo. Para obtener el **TDEE** (Total Dail
 | Muy activo (6–7 días/semana) | × 1.725 |
 | Extremadamente activo (físico + deporte) | × 1.9 |
 
-### 3. Objetivo calórico con déficit
+### 3. Objetivo calórico
 
-Para perder grasa, se aplica un **déficit del 20%** sobre el TDEE:
+El objetivo calórico se ajusta según el ritmo de peso deseado por semana. Partiendo de la base de que **1 kg de grasa corporal equivale aproximadamente a 7700 kcal**, el ajuste diario se calcula así:
 
 ```
-Objetivo calórico = TDEE × 0.80
+Ajuste diario = (kg por semana × 7700) / 7
 ```
 
-Un déficit del 20% es conservador: suficiente para perder peso de forma constante sin sacrificar músculo ni rendimiento.
+Y según el objetivo:
+
+- **Perder peso:** `Objetivo = TDEE − ajuste diario`
+- **Ganar peso:** `Objetivo = TDEE + ajuste diario`
+- **Mantener:** `Objetivo = TDEE`
+
+Por ejemplo, perder 0.5 kg/semana supone un déficit de unas 550 kcal/día. Se recomienda un ritmo de entre 0.5 y 1 kg por semana para minimizar la pérdida de masa muscular.
 
 ### 4. Distribución de macros
 
@@ -154,7 +160,13 @@ La separación entre `models`, `schemas`, `routers` y `services` mantiene el bac
 
 ## Roadmap
 
-- [x] V1 — Cálculo de TDEE/macros y registro manual de alimentos
+**V1 — Núcleo nutricional** (en progreso)
+- [x] Cálculo de BMR, TDEE y objetivo calórico
+- [ ] Cálculo y distribución de macros
+- [ ] Registro manual de alimentos
+- [ ] Resumen diario
+
+**Próximas versiones**
 - [ ] V2 — Scraping de Mercadona para base de datos de productos
 - [ ] V3 — Escáner de código de barras desde el móvil
 - [ ] V4 — Login y soporte multiusuario
