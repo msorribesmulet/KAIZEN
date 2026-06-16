@@ -29,3 +29,25 @@ def target_calories(tdee, goal, kg_per_week):
         return tdee
     else:
         raise ValueError(f"Goal no válido: {goal}")
+
+
+def calculate_macros(weight, target_calories):
+    protein = weight * 2
+    fat = weight * 0.8
+    carbs = (target_calories - (protein * 4) - (fat * 9)) / 4
+    macros = {"protein": protein, "fat": fat, "carbs": carbs}
+    return macros
+
+
+if __name__ == "__main__":
+    mi_bmr = bmr(91.5, 187, 23, "man")
+    print(f"BMR: {mi_bmr}")
+
+    mi_tdee = tdee(mi_bmr, "moderate")
+    print(f"TDEE: {mi_tdee}")
+
+    mi_calories = target_calories(mi_tdee, "lose", 1)
+    print(f"Target Calories: {mi_calories}")
+
+    mi_macros = calculate_macros(91.5, mi_calories)
+    print(f"Macros: {mi_macros}")
