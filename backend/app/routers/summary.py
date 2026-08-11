@@ -1,14 +1,15 @@
+from datetime import date as date_type
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
 from app.database import get_session
 from app.models.log import Log
 from app.models.food import Food
-from datetime import date as date_type
+from app.schemas.summary import SummaryResponse
+from sqlmodel import Session, select
 
 router = APIRouter()
 
 
-@router.get("/summary/{date}")
+@router.get("/summary/{date}", response_model=SummaryResponse)
 def get_summary(date: date_type, session: Session = Depends(get_session)):
     results = session.exec(
         select(Log, Food).join(Food, Log.food_id == Food.id).where(Log.date == date)
