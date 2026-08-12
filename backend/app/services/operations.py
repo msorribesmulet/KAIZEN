@@ -1,3 +1,7 @@
+from app.models.profile import ActivityLevel
+from app.models.profile import Goal
+
+
 def bmr(weight, height, age, sex):
     bmr_formula = (10 * weight) + (6.25 * height) - (5 * age)
     if sex == "man":
@@ -10,22 +14,22 @@ def bmr(weight, height, age, sex):
 
 def tdee(bmr, activity_lvl):
     factors = {
-        "sedentary": 1.2,
-        "light": 1.375,
-        "moderate": 1.55,
-        "active": 1.725,
-        "very_active": 1.9,
+        ActivityLevel.SEDENTARY: 1.2,
+        ActivityLevel.LIGHT: 1.375,
+        ActivityLevel.MODERATE: 1.55,
+        ActivityLevel.ACTIVE: 1.725,
+        ActivityLevel.VERY_ACTIVE: 1.9,
     }
     return factors[activity_lvl] * bmr
 
 
 def target_calories(tdee, goal, kg_per_week):
     calorie_adjustment = (kg_per_week * 7700) / 7
-    if goal == "gain":
+    if goal == Goal.GAIN:
         return tdee + calorie_adjustment
-    elif goal == "lose":
+    elif goal == Goal.LOSE:
         return tdee - calorie_adjustment
-    elif goal == "maintain":
+    elif goal == Goal.MAINTAIN:
         return tdee
     else:
         raise ValueError(f"Goal no válido: {goal}")
