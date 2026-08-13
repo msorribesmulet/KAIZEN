@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Sistema de diseño de Kaizen — tema oscuro azulado (navy/slate).
+   Tailwind v4: los tokens se declaran en @theme y quedan disponibles como
+   utilidades (bg-surface, text-ink-muted, border-line, ...).
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Superficies: del fondo de página a la tarjeta más elevada */
+  --color-canvas: #080d18;
+  --color-surface: #131c30;
+  --color-surface-2: #1b2540;
+  --color-surface-3: #24304d;
+
+  /* Bordes */
+  --color-line: #24304d;
+  --color-line-strong: #33416a;
+
+  /* Texto */
+  --color-ink: #e8edf7;
+  --color-ink-soft: #b3bed6;
+  --color-ink-muted: #8593b0;
+
+  /* Acento principal (azul) */
+  --color-brand: #3987e5;
+  --color-brand-hover: #5598e7;
+  --color-brand-strong: #256abf;
+  --color-brand-ink: #cde2fb;
+
+  /* Paleta de macros — validada para daltonismo y contraste sobre #131c30.
+     Tres azules no son distinguibles entre sí (azul↔violeta: ΔE 9.8 en visión
+     normal, muy por debajo del suelo de 15), así que la grasa sale del rango
+     azul a propósito. */
+  --color-macro-protein: #3987e5; /* azul */
+  --color-macro-carbs: #199e70; /* aguamarina */
+  --color-macro-fat: #d95926; /* ámbar */
+
+  /* Estado */
+  --color-danger: #e66767;
+  --color-success: #199e70;
+
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    sans-serif;
+
+  --radius-card: 1rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    /* Halo azulado sutil detrás del contenido */
+    background-image:
+      radial-gradient(60rem 40rem at 15% -10%, rgb(57 135 229 / 0.1), transparent 60%),
+      radial-gradient(50rem 35rem at 95% 0%, rgb(37 106 191 / 0.08), transparent 55%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  /* Foco visible y coherente en toda la app */
+  :focus-visible {
+    @apply outline-brand outline-2 outline-offset-2;
+  }
+
+  /* Quita las flechas de los inputs numéricos: se teclea el valor */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  ::selection {
+    @apply bg-brand/35 text-ink;
+  }
+}
+
+@layer utilities {
+  /* Respeta el notch / barra de gestos en móvil */
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--pb-safe-extra, 0px));
+  }
+
+  .animate-rise {
+    animation: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
