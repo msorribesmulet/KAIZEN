@@ -8,6 +8,7 @@
 # NUNCA deben subirse a un repo público.
 .env
 .env.local
+.env.*.local
 *.env
 backend/.env
 frontend/.env
@@ -28,6 +29,12 @@ env/
 .venv/
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Cobertura de tests
+.coverage
+htmlcov/
 
 # --- NODE / FRONTEND ---
 node_modules/
@@ -36,6 +43,12 @@ build/
 .vite/
 *.log
 npm-debug.log*
+
+# Caché incremental de TypeScript: se regenera en cada build
+*.tsbuildinfo
+
+# Service worker que genera vite-plugin-pwa en modo desarrollo
+dev-dist/
 
 # --- EDITOR / SISTEMA ---
 .vscode/
