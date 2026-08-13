@@ -14,12 +14,17 @@ class Goal(str, Enum):
     MAINTAIN = "maintain"
 
 
+class Sex(str, Enum):
+    MALE = "male"
+    FEMALE = "female"
+
+
 class Profile(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     weight: float
     height: float
     age:  int
-    sex:  str
+    sex:  Sex
     activity_lvl: ActivityLevel
     goal: Goal
     kg_per_week: float

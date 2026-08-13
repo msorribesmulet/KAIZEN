@@ -4,9 +4,9 @@ from app.models.profile import Goal
 
 def bmr(weight, height, age, sex):
     bmr_formula = (10 * weight) + (6.25 * height) - (5 * age)
-    if sex == "man":
+    if sex == "male":
         return bmr_formula + 5
-    elif sex == "woman":
+    elif sex == "female":
         return bmr_formula - 161
     else:
         raise ValueError(f"Sexo no válido: {sex}")
