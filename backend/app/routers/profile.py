@@ -22,11 +22,11 @@ def create_profile(profile: ProfileCreate, session: Session = Depends(get_sessio
         raise HTTPException(status_code=409, detail="Profile already exists")
 
     new_profile = Profile(
-        weight=profile.weight,
-        height=profile.height,
+        weight_kg=profile.weight_kg,
+        height_cm=profile.height_cm,
         age=profile.age,
         sex=profile.sex,
-        activity_lvl=profile.activity_lvl,
+        activity_level=profile.activity_level,
         goal=profile.goal,
         kg_per_week=profile.kg_per_week,
     )
@@ -53,11 +53,11 @@ def update_profile(
     db_profile = session.get(Profile, profile_id)
     if not db_profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    db_profile.weight = profile.weight
-    db_profile.height = profile.height
+    db_profile.weight_kg = profile.weight_kg
+    db_profile.height_cm = profile.height_cm
     db_profile.age = profile.age
     db_profile.sex = profile.sex
-    db_profile.activity_lvl = profile.activity_lvl
+    db_profile.activity_level = profile.activity_level
     db_profile.goal = profile.goal
     db_profile.kg_per_week = profile.kg_per_week
     session.add(db_profile)

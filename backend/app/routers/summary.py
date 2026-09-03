@@ -17,29 +17,28 @@ def _consumed_macros(session: Session, day: date_type) -> Macros:
         select(Log, Food).join(Food, Log.food_id == Food.id).where(Log.date == day)
     ).all()
 
-    calories, protein, carbs, fats = 0, 0, 0, 0
+    calories, protein, carbs, fat = 0, 0, 0, 0
     for log, food in results:
         factor = log.grams / 100
         calories += food.cal_100g * factor
         protein += food.protein_100g * factor
         carbs += food.carbs_100g * factor
-        fats += food.fat_100g * factor
-    return Macros(calories=calories, protein=protein, carbs=carbs, fats=fats)
+        fat += food.fat_100g * factor
+    return Macros(calories=calories, protein=protein, carbs=carbs, fat=fat)
 
 
 def _target_macros(profile: Profile) -> Macros:
     """Objetivo del día a partir del perfil: BMR -> TDEE -> calorías -> macros."""
-    profile_bmr = bmr(profile.weight, profile.height, profile.age, profile.sex)
-    profile_tdee = tdee(profile_bmr, profile.activity_lvl)
+    profile_bmr = bmr(profile.weight_kg, profile.height_cm, profile.age, profile.sex)
+    profile_tdee = tdee(profile_bmr, profile.activity_level)
     calories = target_calories(profile_tdee, profile.goal, profile.kg_per_week)
-    macros = calculate_macros(profile.weight, calories)
+    macros = calculate_macros(profile.weight_kg, calories)
 
-    # calculate_macros devuelve la grasa como "fat"; el schema la expone como "fats".
     return Macros(
         calories=calories,
         protein=macros["protein"],
         carbs=macros["carbs"],
-        fats=macros["fat"],
+        fat=macros["fat"],
     )
 
 
@@ -61,7 +60,7 @@ def get_summary(date: date_type, session: Session = Depends(get_session)):
         calories=target.calories - consumed.calories,
         protein=target.protein - consumed.protein,
         carbs=target.carbs - consumed.carbs,
-        fats=target.fats - consumed.fats,
+        fat=target.fat - consumed.fat,
     )
 
     return SummaryResponse(

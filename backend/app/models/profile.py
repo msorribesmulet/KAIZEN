@@ -21,11 +21,11 @@ class Sex(str, Enum):
 
 class Profile(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    weight: float
-    height: float
-    age:  int
-    sex:  Sex
-    activity_lvl: ActivityLevel
+    weight_kg: float
+    height_cm: float
+    age: int
+    sex: Sex
+    activity_level: ActivityLevel
     goal: Goal
     kg_per_week: float
 

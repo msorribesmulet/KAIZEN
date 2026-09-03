@@ -6,7 +6,7 @@ class Macros(SQLModel):
     calories: float
     protein: float
     carbs: float
-    fats: float
+    fat: float
 
 
 class SummaryResponse(SQLModel):

@@ -12,7 +12,7 @@ def bmr(weight, height, age, sex):
         raise ValueError(f"Sexo no válido: {sex}")
 
 
-def tdee(bmr, activity_lvl):
+def tdee(bmr, activity_level):
     factors = {
         ActivityLevel.SEDENTARY: 1.2,
         ActivityLevel.LIGHT: 1.375,
@@ -20,7 +20,7 @@ def tdee(bmr, activity_lvl):
         ActivityLevel.ACTIVE: 1.725,
         ActivityLevel.VERY_ACTIVE: 1.9,
     }
-    return factors[activity_lvl] * bmr
+    return factors[activity_level] * bmr
 
 
 def target_calories(tdee, goal, kg_per_week):
