@@ -1,3 +1,4 @@
+from datetime import date as date_type
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.database import get_session
@@ -21,9 +22,11 @@ def create_log(log: LogCreate, session: Session = Depends(get_session)):
 
 
 @router.get("/logs")
-def get_logs(session: Session = Depends(get_session)):
-    logs = session.exec(select(Log)).all()
-    return logs
+def get_logs(date: date_type | None = None, session: Session = Depends(get_session)):
+    query = select(Log)
+    if date is not None:
+        query = query.where(Log.date == date)
+    return session.exec(query).all()
 
 
 @router.delete("/logs/{log_id}")
