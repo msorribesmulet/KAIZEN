@@ -46,20 +46,15 @@ def delete_profile(profile_id: int, session: Session = Depends(get_session)):
     return {"ok": True}
 
 
-@router.put("/profile/{profile_id}")
-def update_profile(
-    profile_id: int, profile: ProfileCreate, session: Session = Depends(get_session)
-):
-    db_profile = session.get(Profile, profile_id)
-    if not db_profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    db_profile.weight_kg = profile.weight_kg
-    db_profile.height_cm = profile.height_cm
-    db_profile.age = profile.age
-    db_profile.sex = profile.sex
-    db_profile.activity_level = profile.activity_level
-    db_profile.goal = profile.goal
-    db_profile.kg_per_week = profile.kg_per_week
+@router.put("/profile")
+def upsert_profile(profile: ProfileCreate, session: Session = Depends(get_session)):
+    db_profile = session.exec(select(Profile)).first()
+
+    if db_profile:
+        db_profile.sqlmodel_update(profile.model_dump())
+    else:
+        db_profile = Profile(**profile.model_dump())
+
     session.add(db_profile)
     session.commit()
     session.refresh(db_profile)
