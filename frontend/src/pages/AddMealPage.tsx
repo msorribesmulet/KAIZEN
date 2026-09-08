@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createLog } from '@/api/logs';
 import { CheckIcon, SearchIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Card, EmptyState } from '@/components/ui/Card';
@@ -15,12 +16,14 @@ import { normalizeForSearch } from '@/utils/text';
 /** Buscar un alimento, indicar los gramos y añadirlo al día. */
 export function AddMealPage() {
   const navigate = useNavigate();
-  const { foods, addLog } = useAppData();
+  const { foods, loading, error } = useAppData();
 
   const [date, setDate] = useState(todayISO());
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Food | null>(null);
   const [gramsInput, setGramsInput] = useState('100');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const results = useMemo(() => {
     const q = normalizeForSearch(query.trim());
@@ -32,10 +35,19 @@ export function AddMealPage() {
   const validGrams = Number.isFinite(grams) && grams > 0;
   const serving = selected && validGrams ? calcServing(selected, grams) : null;
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!selected || !validGrams) return;
-    addLog(date, selected.id, grams);
-    navigate('/dashboard');
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      await createLog({ date, food_id: selected.id, grams });
+      navigate('/dashboard');
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : 'No se pudo registrar');
+      setSaving(false);
+    }
   }
 
   function handleSelect(food: Food) {
@@ -78,7 +90,11 @@ export function AddMealPage() {
             </div>
           </div>
 
-          {results.length === 0 ? (
+          {loading ? (
+            <EmptyState title="Cargando el catálogo…" description="" />
+          ) : error ? (
+            <EmptyState title="No se pudo cargar el catálogo" description={error} />
+          ) : results.length === 0 ? (
             <EmptyState
               title="Ningún alimento coincide"
               description={`No hay resultados para «${query}». Puedes crearlo desde la pantalla de Alimentos.`}
@@ -230,9 +246,16 @@ export function AddMealPage() {
                 </dl>
               </div>
 
-              <Button size="lg" fullWidth disabled={!validGrams} onClick={handleConfirm}>
+              {saveError ? <p className="text-danger text-sm">{saveError}</p> : null}
+
+              <Button
+                size="lg"
+                fullWidth
+                disabled={!validGrams || saving}
+                onClick={handleConfirm}
+              >
                 <CheckIcon className="size-5" />
-                Añadir al registro
+                {saving ? 'Guardando…' : 'Añadir al registro'}
               </Button>
             </div>
           )}

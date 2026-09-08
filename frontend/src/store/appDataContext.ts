@@ -1,32 +1,27 @@
 import { createContext, use } from 'react';
-import type { DailySummary, Food, FoodInput, LogEntry, User, UserProfileInput } from '@/types';
+import type { Food, FoodInput, User, UserProfileInput } from '@/types';
 
 /**
- * Contrato del store de la aplicación.
+ * Contrato del store: lo global de la aplicación.
  *
- * Hoy lo implementa `AppDataProvider` sobre datos mock en memoria. Cuando
- * conectes el backend, la firma no cambia: solo la implementación (los métodos
- * pasarán a ser `async` y harán fetch).
+ * Los datos que dependen de un día concreto (registros y resumen) no viven
+ * aquí: los sirve el hook `useDayData(date)`.
  */
 export interface AppData {
   /** Catálogo completo de alimentos. */
   foods: Food[];
-  /** Perfil del usuario. */
-  user: User;
+  /** Perfil del usuario, o `null` si todavía no se ha creado. */
+  user: User | null;
+  /** Carga inicial en curso. */
+  loading: boolean;
+  /** Mensaje de error de la carga inicial, o `null`. */
+  error: string | null;
 
-  /** Registros de una fecha, ya resueltos con su alimento y sus macros. */
-  getEntriesByDate(date: string): LogEntry[];
-  /** Totales nutricionales de una fecha. */
-  getSummary(date: string): DailySummary;
+  createFood(input: FoodInput): Promise<void>;
+  updateFood(id: number, input: FoodInput): Promise<void>;
+  deleteFood(id: number): Promise<void>;
 
-  addLog(date: string, foodId: number, grams: number): void;
-  deleteLog(logId: number): void;
-
-  createFood(input: FoodInput): void;
-  updateFood(id: number, input: FoodInput): void;
-  deleteFood(id: number): void;
-
-  updateProfile(input: UserProfileInput): void;
+  updateProfile(input: UserProfileInput): Promise<void>;
 }
 
 export const AppDataContext = createContext<AppData | null>(null);

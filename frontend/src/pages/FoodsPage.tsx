@@ -13,12 +13,13 @@ import { normalizeForSearch } from '@/utils/text';
 
 /** CRUD del catálogo de alimentos. */
 export function FoodsPage() {
-  const { foods, createFood, updateFood, deleteFood } = useAppData();
+  const { foods, loading, error, createFood, updateFood, deleteFood } = useAppData();
 
   const [query, setQuery] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Food | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Food | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const results = useMemo(() => {
     const q = normalizeForSearch(query.trim());
@@ -36,15 +37,27 @@ export function FoodsPage() {
     setFormOpen(true);
   }
 
-  function handleSubmit(input: FoodInput) {
-    if (editing) updateFood(editing.id, input);
-    else createFood(input);
+  async function run(action: Promise<void>, fallback: string) {
+    setActionError(null);
+    try {
+      await action;
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : fallback);
+    }
   }
 
-  function confirmDelete() {
+  async function handleSubmit(input: FoodInput) {
+    await run(
+      editing ? updateFood(editing.id, input) : createFood(input),
+      'No se pudo guardar el alimento',
+    );
+  }
+
+  async function confirmDelete() {
     if (!pendingDelete) return;
-    deleteFood(pendingDelete.id);
+    const id = pendingDelete.id;
     setPendingDelete(null);
+    await run(deleteFood(id), 'No se pudo borrar el alimento');
   }
 
   // `protein` -> `protein_100g`, etc. TypeScript resuelve el tipo de la clave.
@@ -60,8 +73,9 @@ export function FoodsPage() {
         <div>
           <h1 className="text-ink text-2xl font-semibold tracking-tight">Alimentos</h1>
           <p className="text-ink-muted mt-0.5 text-sm">
-            {foods.length} {foods.length === 1 ? 'alimento' : 'alimentos'} en tu catálogo, con sus
-            valores por 100 g.
+            {loading || error
+              ? 'Valores por 100 g.'
+              : `${foods.length} ${foods.length === 1 ? 'alimento' : 'alimentos'} en tu catálogo, con sus valores por 100 g.`}
           </p>
         </div>
         <Button onClick={openCreate} className="shrink-0">
@@ -69,6 +83,12 @@ export function FoodsPage() {
           Nuevo alimento
         </Button>
       </header>
+
+      {actionError ? (
+        <Card className="p-4">
+          <p className="text-danger text-sm">{actionError}</p>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="border-line border-b p-4">
@@ -89,7 +109,11 @@ export function FoodsPage() {
           </div>
         </div>
 
-        {results.length === 0 ? (
+        {loading ? (
+          <EmptyState title="Cargando tu catálogo…" description="" />
+        ) : error ? (
+          <EmptyState title="No se pudo cargar el catálogo" description={error} />
+        ) : results.length === 0 ? (
           <EmptyState
             title={query ? 'Ningún alimento coincide' : 'Tu catálogo está vacío'}
             description={

@@ -1,13 +1,4 @@
-import type {
-  ActivityLevel,
-  DailySummary,
-  Food,
-  Goal,
-  LogEntry,
-  NutritionTargets,
-  Sex,
-  UserProfileInput,
-} from '@/types';
+import type { ActivityLevel, Food, Goal, NutritionTargets, Sex, UserProfileInput } from '@/types';
 
 /** Kilocalorías por gramo de cada macronutriente. */
 export const KCAL_PER_GRAM = { protein: 4, carbs: 4, fat: 9 } as const;
@@ -118,18 +109,4 @@ export function calcServing(food: Food, grams: number) {
     carbs: food.carbs_100g * ratio,
     fat: food.fat_100g * ratio,
   };
-}
-
-/** Suma los registros de un día en un `DailySummary`. */
-export function summarize(date: string, entries: readonly LogEntry[]): DailySummary {
-  return entries.reduce<DailySummary>(
-    (acc, entry) => ({
-      date: acc.date,
-      total_cal: acc.total_cal + entry.cal,
-      total_protein: acc.total_protein + entry.protein,
-      total_carbs: acc.total_carbs + entry.carbs,
-      total_fat: acc.total_fat + entry.fat,
-    }),
-    { date, total_cal: 0, total_protein: 0, total_carbs: 0, total_fat: 0 },
-  );
 }

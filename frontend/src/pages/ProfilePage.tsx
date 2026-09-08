@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input, Select } from '@/components/ui/Input';
 import { useAppData } from '@/store/appDataContext';
-import type { ActivityLevel, Goal, Sex, UserProfileInput } from '@/types';
+import type { ActivityLevel, Goal, Sex, User, UserProfileInput } from '@/types';
 import {
   ACTIVITY_LABELS,
   formatGrams,
@@ -34,9 +34,33 @@ interface FormState {
  * objetivo calórico → reparto de macros).
  */
 export function ProfilePage() {
-  const { user, updateProfile } = useAppData();
+  const { user, loading, error } = useAppData();
 
-  const [form, setForm] = useState<FormState>({
+  if (loading) {
+    return <p className="text-ink-muted p-5 text-sm">Cargando tu perfil…</p>;
+  }
+
+  if (error) {
+    return <p className="text-danger p-5 text-sm">{error}</p>;
+  }
+
+  return <ProfileForm key={user?.id ?? 'nuevo'} user={user} />;
+}
+
+const EMPTY_FORM: FormState = {
+  weight_kg: '',
+  height_cm: '',
+  age: '',
+  sex: 'male',
+  activity_level: 'moderate',
+  goal: 'maintain',
+  kg_per_week: '0',
+};
+
+function formFrom(user: User | null): FormState {
+  if (!user) return EMPTY_FORM;
+
+  return {
     weight_kg: String(user.weight_kg),
     height_cm: String(user.height_cm),
     age: String(user.age),
@@ -44,12 +68,20 @@ export function ProfilePage() {
     activity_level: user.activity_level,
     goal: user.goal,
     kg_per_week: String(user.kg_per_week),
-  });
+  };
+}
+
+function ProfileForm({ user }: { user: User | null }) {
+  const { updateProfile } = useAppData();
+
+  const [form, setForm] = useState<FormState>(() => formFrom(user));
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function set<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
     setSaved(false);
+    setSaveError(null);
   }
 
   // Perfil numérico usado para el cálculo. Los campos vacíos valen 0, así el
@@ -68,12 +100,16 @@ export function ProfilePage() {
   const isMaintaining = form.goal === 'maintain';
   const dailyAdjustment = Math.abs(targets.target_cal - targets.tdee);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    // La llamada al backend va en el store (AppDataProvider.updateProfile),
-    // que es el único punto donde se toca la fuente de datos.
-    updateProfile(profile);
-    setSaved(true);
+    setSaveError(null);
+
+    try {
+      await updateProfile(profile);
+      setSaved(true);
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : 'No se pudo guardar');
+    }
   }
 
   return (
@@ -172,6 +208,8 @@ export function ProfilePage() {
                 hint={`Ajuste de ${formatNumber(dailyAdjustment)} kcal al día (1 kg de grasa ≈ 7.700 kcal).`}
               />
             )}
+
+            {saveError ? <p className="text-danger text-sm">{saveError}</p> : null}
 
             <Button type="submit" size="lg" fullWidth className="mt-1">
               {saved ? <CheckIcon className="size-5" /> : null}

@@ -30,14 +30,21 @@ export interface Log {
 
 export type LogInput = Omit<Log, 'id'>;
 
-/** Totales nutricionales de un día. */
+/** Bloque de calorías y macros, en las tres variantes que devuelve el resumen. */
+export interface Macros {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+/** Resumen de un día: lo comido, el objetivo y lo que queda. */
 export interface DailySummary {
   /** Fecha en formato ISO `YYYY-MM-DD`. */
   date: string;
-  total_cal: number;
-  total_protein: number;
-  total_carbs: number;
-  total_fat: number;
+  consumed: Macros;
+  target: Macros;
+  remaining: Macros;
 }
 
 export type Sex = 'male' | 'female';
@@ -49,7 +56,6 @@ export type Goal = 'lose' | 'maintain' | 'gain';
 /** Perfil del usuario con los datos necesarios para calcular su objetivo. */
 export interface User {
   id: number;
-  email: string;
   weight_kg: number;
   height_cm: number;
   age: number;
@@ -61,7 +67,7 @@ export interface User {
 }
 
 /** Datos editables del perfil (todo lo que no asigna el backend). */
-export type UserProfileInput = Omit<User, 'id' | 'email'>;
+export type UserProfileInput = Omit<User, 'id'>;
 
 /** Objetivos calóricos y de macros derivados del perfil. */
 export interface NutritionTargets {
