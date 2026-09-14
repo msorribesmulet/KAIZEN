@@ -4,6 +4,19 @@ App de seguimiento nutricional para control de calorías y macros. Calcula el ga
 
 ---
 
+## Por qué existe
+
+Llevaba tiempo contando calorías con apps de móvil y siempre chocaba con lo mismo: **escanear el código de barras de un producto del supermercado era de pago**. Justo la función que hace que registrar una comida tarde tres segundos en vez de dos minutos buscando "yogur griego natural" entre cincuenta resultados de dudosa procedencia.
+
+Kaizen nace de ahí, con dos objetivos:
+
+1. **Que el escaneo sea gratis.** Es lo que de verdad te hace seguir usando la app pasada la primera semana.
+2. **Aprender construyéndolo.** Es mi proyecto para aprender a montar una aplicación completa de principio a fin: base de datos, API, interfaz y despliegue.
+
+El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios sostenidos en el tiempo. Vale igual para la nutrición que para aprender a programar.
+
+---
+
 ## Características
 
 - Cálculo de TDEE (gasto energético total diario) con la fórmula de Mifflin-St Jeor
@@ -22,11 +35,21 @@ App de seguimiento nutricional para control de calorías y macros. Calcula el ga
 - FastAPI — framework web, moderno y rápido, con documentación automática de la API
 - SQLModel — ORM para trabajar con la base de datos desde Python
 - SQLite — base de datos ligera basada en un único archivo, sin servidor
+- pytest — 48 tests sobre los cálculos y los endpoints
+- pylint y black — estilo y formato del código
 
 **Frontend**
-- React + TypeScript — interfaz de usuario con tipado estático
+- React + TypeScript — interfaz de usuario con tipado estático estricto
+- Vite — servidor de desarrollo y empaquetado
 - Tailwind CSS — estilos, con enfoque mobile-first
+- React Router — navegación entre pantallas
+- vite-plugin-pwa — instalable en el móvil
 - pnpm — gestor de paquetes
+
+El frontend habla con el backend por HTTP; no comparten código. Las fórmulas
+nutricionales están implementadas en los dos lados a propósito: el servidor es
+la fuente de verdad, y la copia del cliente permite que la pantalla de Perfil
+recalcule los objetivos mientras escribes, sin esperar al servidor.
 
 ---
 
@@ -64,6 +87,18 @@ pnpm dev
 ```
 
 Frontend disponible en `http://localhost:5173`
+
+Hacen falta los dos arrancados a la vez: el frontend pide todos sus datos a la API.
+
+### Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest tests/ -q
+```
+
+Usan una base de datos en memoria, así que no tocan tu `kaizen.db`.
 
 ---
 
@@ -138,39 +173,54 @@ Con el objetivo calórico definido, los macros se reparten por prioridad:
 ```
 kaizen/
 ├── backend/
-│   └── app/
-│       ├── main.py          # Punto de entrada de FastAPI
-│       ├── database.py      # Conexión a SQLite
-│       ├── models/          # Tablas de la base de datos
-│       ├── schemas/         # Modelos de entrada/salida de la API
-│       ├── routers/         # Endpoints agrupados por recurso
-│       └── services/        # Lógica de negocio (cálculos)
+│   ├── app/
+│   │   ├── main.py          # Punto de entrada de FastAPI y CORS
+│   │   ├── config.py        # Configuración leída del .env
+│   │   ├── database.py      # Conexión a SQLite
+│   │   ├── models/          # Tablas de la base de datos
+│   │   ├── schemas/         # Modelos de entrada/salida de la API
+│   │   ├── routers/         # Endpoints agrupados por recurso
+│   │   └── services/        # Lógica de negocio (cálculos)
+│   └── tests/               # pytest: cálculos y endpoints
 │
 └── frontend/
     └── src/
-        ├── api/             # Llamadas al backend
-        ├── pages/           # Pantallas (Perfil, Registro, Resumen)
+        ├── api/             # Una función por endpoint, sobre un fetch común
+        ├── store/           # Estado compartido y carga de datos
+        ├── pages/           # Las cinco pantallas
         ├── components/      # Componentes reutilizables
+        ├── utils/           # Cálculos, formato y colores
         └── types/           # Tipos TypeScript compartidos
 ```
 
 La separación entre `models`, `schemas`, `routers` y `services` mantiene el backend organizado: los modelos definen las tablas, los schemas definen qué entra y sale de la API, los routers gestionan las peticiones y los services contienen la lógica de cálculo.
 
+En el frontend, `store/AppDataProvider` guarda lo global (catálogo de alimentos y perfil), que se carga una vez al arrancar, y `store/useDayData` sirve lo que depende del día seleccionado (registros y resumen), que se recarga al cambiar de fecha.
+
 ---
 
 ## Roadmap
 
-**V1 — Núcleo nutricional** (en progreso)
+**V1 — Núcleo nutricional** ✅
 - [x] Cálculo de BMR, TDEE y objetivo calórico
-- [ ] Cálculo y distribución de macros
-- [ ] Registro manual de alimentos
-- [ ] Resumen diario
+- [x] Cálculo y distribución de macros
+- [x] Registro manual de alimentos
+- [x] Resumen diario
+- [x] Interfaz conectada a la API
 
 **Próximas versiones**
 - [ ] V2 — Scraping de Mercadona para base de datos de productos
-- [ ] V3 — Escáner de código de barras desde el móvil
+- [ ] V3 — Escáner de código de barras desde el móvil *(el motivo por el que existe el proyecto)*
 - [ ] V4 — Login y soporte multiusuario
-- [ ] V5 — PWA instalable en móvil
+- [ ] V5 — Despliegue con demo pública
+
+La PWA ya está configurada: la app es instalable en el móvil desde el navegador.
+
+### Limitaciones conocidas
+
+- **Un solo usuario.** No hay autenticación todavía; la pantalla de login es decorativa y el perfil es único. Llega en V4.
+- **Borrar un alimento afecta a días pasados.** Los registros que lo usaban dejan de sumar en el resumen. Pendiente de resolver con borrado lógico.
+- **SQLite.** Perfecto para uso local; para desplegarlo con varios usuarios haría falta PostgreSQL.
 
 ---
 
