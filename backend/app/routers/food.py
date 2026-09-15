@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, not_, select
 from app.database import get_session
 from app.models.food import Food
 from app.schemas.food import FoodCreate
@@ -24,16 +24,17 @@ def create_food(food: FoodCreate, session: Session = Depends(get_session)):
 
 @router.get("/foods")
 def get_foods(session: Session = Depends(get_session)):
-    foods = session.exec(select(Food)).all()
+    foods = session.exec(select(Food).where(not_(Food.is_deleted))).all()
     return foods
 
 
 @router.delete("/foods/{food_id}")
 def delete_food(food_id: int, session: Session = Depends(get_session)):
     food = session.get(Food, food_id)
-    if not food:
+    if not food or food.is_deleted:
         raise HTTPException(status_code=404, detail="Food not found")
-    session.delete(food)
+    food.is_deleted = True
+    session.add(food)
     session.commit()
     return {"ok": True}
 
@@ -43,7 +44,7 @@ def update_food(
     food_id: int, food: FoodCreate, session: Session = Depends(get_session)
 ):
     db_food = session.get(Food, food_id)
-    if not db_food:
+    if not db_food or db_food.is_deleted:
         raise HTTPException(status_code=404, detail="Food not found")
     db_food.name = food.name
     db_food.cal_100g = food.cal_100g
