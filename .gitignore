@@ -20,6 +20,9 @@ frontend/.env
 *.sqlite3
 backend/kaizen.db
 
+# Copias de seguridad de la base de datos (kaizen.db.bak-loquesea)
+*.db.bak*
+
 # --- PYTHON ---
 __pycache__/
 *.py[cod]

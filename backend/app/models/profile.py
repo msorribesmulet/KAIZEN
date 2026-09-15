@@ -1,12 +1,14 @@
 from enum import Enum
 from sqlmodel import SQLModel, Field
 
+
 class ActivityLevel(str, Enum):
     SEDENTARY = "sedentary"
     LIGHT = "light"
     MODERATE = "moderate"
     ACTIVE = "active"
     VERY_ACTIVE = "very_active"
+
 
 class Goal(str, Enum):
     GAIN = "gain"
@@ -28,4 +30,3 @@ class Profile(SQLModel, table=True):
     activity_level: ActivityLevel
     goal: Goal
     kg_per_week: float
-
