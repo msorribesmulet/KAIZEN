@@ -219,7 +219,7 @@ La PWA ya está configurada: la app es instalable en el móvil desde el navegado
 ### Limitaciones conocidas
 
 - **Un solo usuario.** No hay autenticación todavía; la pantalla de login es decorativa y el perfil es único. Llega en V4.
-- **Borrar un alimento afecta a días pasados.** Los registros que lo usaban dejan de sumar en el resumen. Pendiente de resolver con borrado lógico.
+- **Los alimentos borrados no se eliminan.** Se ocultan del catálogo pero la fila se conserva, para que los días en que los comiste sigan cuadrando. No hay pantalla para restaurarlos ni para vaciar la papelera.
 - **SQLite.** Perfecto para uso local; para desplegarlo con varios usuarios haría falta PostgreSQL.
 
 ---
