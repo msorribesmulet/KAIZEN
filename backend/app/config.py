@@ -10,3 +10,4 @@ load_dotenv(ENV_PATH)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///kaizen.db")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+SQL_ECHO = os.getenv("SQL_ECHO", "false").lower() == "true"
