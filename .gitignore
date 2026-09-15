@@ -13,6 +13,21 @@
 backend/.env
 frontend/.env
 
+# Claves, certificados y credenciales. Todavía no existe ninguno en el
+# proyecto: están aquí para que el día que aparezcan ya estén cubiertos.
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+credenciales.json
+credentials.json
+service-account*.json
+
 # --- BASE DE DATOS ---
 # Tu base de datos local con tus datos personales.
 *.db

@@ -100,6 +100,15 @@ python -m pytest tests/ -q
 
 Usan una base de datos en memoria, así que no tocan tu `kaizen.db`.
 
+### Hook de pre-commit (recomendado)
+
+El repositorio incluye un hook que aborta el commit si intentas subir un `.env`,
+una base de datos o una clave privada. Git no lo activa solo al clonar:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ---
 
 ## Variables de entorno
