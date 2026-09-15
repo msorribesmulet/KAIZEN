@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getLogs } from '@/api/logs';
 import { getSummary } from '@/api/summary';
-import type { DailySummary, Log, LogEntry } from '@/types';
+import type { DailySummary, LogEntry, LogWithFood } from '@/types';
 import { calcServing } from '@/utils/nutrition';
-import { useAppData } from './appDataContext';
 
 export interface DayData {
   entries: LogEntry[];
@@ -14,9 +13,7 @@ export interface DayData {
 }
 
 export function useDayData(date: string): DayData {
-  const { foods } = useAppData();
-
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs, setLogs] = useState<LogWithFood[]>([]);
   const [summary, setSummary] = useState<DailySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,16 +45,12 @@ export function useDayData(date: string): DayData {
     };
   }, [date, reloadToken]);
 
-  const foodsById = useMemo(() => new Map(foods.map((food) => [food.id, food])), [foods]);
-
   const entries = useMemo<LogEntry[]>(
     () =>
-      logs.flatMap((log) => {
-        const food = foodsById.get(log.food_id);
-        if (!food) return [];
-        return [{ log, food, ...calcServing(food, log.grams) }];
-      }),
-    [logs, foodsById],
+      logs.flatMap(({ food, ...log }) =>
+        food ? [{ log, food, ...calcServing(food, log.grams) }] : [],
+      ),
+    [logs],
   );
 
   return {

@@ -2,8 +2,9 @@ from datetime import date as date_type
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.database import get_session
+from app.models.food import Food
 from app.models.log import Log
-from app.schemas.log import LogCreate
+from app.schemas.log import LogCreate, LogRead
 
 router = APIRouter()
 
@@ -21,12 +22,22 @@ def create_log(log: LogCreate, session: Session = Depends(get_session)):
     return new_log
 
 
-@router.get("/logs")
+@router.get("/logs", response_model=list[LogRead])
 def get_logs(date: date_type | None = None, session: Session = Depends(get_session)):
-    query = select(Log)
+    query = select(Log, Food).join(Food, Log.food_id == Food.id, isouter=True)
     if date is not None:
         query = query.where(Log.date == date)
-    return session.exec(query).all()
+
+    return [
+        LogRead(
+            id=log.id,
+            food_id=log.food_id,
+            grams=log.grams,
+            date=log.date,
+            food=food,
+        )
+        for log, food in session.exec(query).all()
+    ]
 
 
 @router.delete("/logs/{log_id}")

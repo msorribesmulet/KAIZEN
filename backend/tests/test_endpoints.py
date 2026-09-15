@@ -20,7 +20,9 @@ class TestFoods:
 
     def test_update(self, client, food_payload):
         food_id = create_food(client, food_payload)
-        response = client.put(f"/foods/{food_id}", json={**food_payload, "cal_100g": 170})
+        response = client.put(
+            f"/foods/{food_id}", json={**food_payload, "cal_100g": 170}
+        )
 
         assert response.status_code == 200
         assert response.json()["cal_100g"] == 170
@@ -37,7 +39,21 @@ class TestFoods:
     def test_delete_missing_food_is_404(self, client):
         assert client.delete("/foods/999").status_code == 404
 
-    @pytest.mark.parametrize("field", ["cal_100g", "protein_100g", "carbs_100g", "fat_100g"])
+    def test_delete_twice_is_404(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+
+        assert client.delete(f"/foods/{food_id}").status_code == 200
+        assert client.delete(f"/foods/{food_id}").status_code == 404
+
+    def test_update_a_deleted_food_is_404(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        client.delete(f"/foods/{food_id}")
+
+        assert client.put(f"/foods/{food_id}", json=food_payload).status_code == 404
+
+    @pytest.mark.parametrize(
+        "field", ["cal_100g", "protein_100g", "carbs_100g", "fat_100g"]
+    )
     def test_rejects_negative_values(self, client, food_payload, field):
         response = client.post("/foods", json={**food_payload, field: -1})
 
@@ -81,6 +97,34 @@ class TestLogs:
 
         assert response.status_code == 422
 
+    def test_each_log_arrives_with_its_food(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        )
+
+        log = client.get("/logs").json()[0]
+
+        assert log["food"]["name"] == "Pechuga de pollo"
+        assert log["food"]["cal_100g"] == 165
+
+    def test_a_deleted_food_still_arrives_with_its_log(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        )
+        client.delete(f"/foods/{food_id}")
+
+        log = client.get("/logs").json()[0]
+
+        assert log["food"]["name"] == "Pechuga de pollo"
+        assert log["food"]["is_deleted"] is True
+
+    def test_an_orphan_log_arrives_with_food_null(self, client):
+        client.post("/logs", json={"food_id": 999, "grams": 100, "date": "2026-08-10"})
+
+        assert client.get("/logs").json()[0]["food"] is None
+
     def test_accepts_a_food_id_that_does_not_exist(self, client):
         response = client.post(
             "/logs", json={"food_id": 999, "grams": 100, "date": "2026-08-10"}
@@ -101,7 +145,9 @@ class TestProfile:
 
     def test_put_updates_without_creating_a_second_row(self, client, profile_payload):
         created = client.put("/profile", json=profile_payload).json()
-        updated = client.put("/profile", json={**profile_payload, "weight_kg": 80}).json()
+        updated = client.put(
+            "/profile", json={**profile_payload, "weight_kg": 80}
+        ).json()
 
         assert updated["id"] == created["id"]
         assert updated["weight_kg"] == 80
@@ -157,17 +203,23 @@ class TestSummary:
     def test_consumed_scales_with_grams(self, client, profile_payload, food_payload):
         client.put("/profile", json=profile_payload)
         food_id = create_food(client, food_payload)
-        client.post("/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-10"})
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-10"}
+        )
 
         consumed = client.get("/summary/2026-08-10").json()["consumed"]
 
         assert consumed["calories"] == pytest.approx(330)
         assert consumed["protein"] == pytest.approx(62)
 
-    def test_remaining_is_target_minus_consumed(self, client, profile_payload, food_payload):
+    def test_remaining_is_target_minus_consumed(
+        self, client, profile_payload, food_payload
+    ):
         client.put("/profile", json=profile_payload)
         food_id = create_food(client, food_payload)
-        client.post("/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-10"})
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-10"}
+        )
 
         summary = client.get("/summary/2026-08-10").json()
 
@@ -175,10 +227,30 @@ class TestSummary:
             expected = summary["target"][macro] - summary["consumed"][macro]
             assert summary["remaining"][macro] == pytest.approx(expected)
 
-    def test_only_counts_logs_from_that_day(self, client, profile_payload, food_payload):
+    def test_borrar_un_alimento_no_altera_los_dias_pasados(
+        self, client, profile_payload, food_payload
+    ):
         client.put("/profile", json=profile_payload)
         food_id = create_food(client, food_payload)
-        client.post("/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-11"})
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-10"}
+        )
+
+        antes = client.get("/summary/2026-08-10").json()["consumed"]
+        client.delete(f"/foods/{food_id}")
+        despues = client.get("/summary/2026-08-10").json()["consumed"]
+
+        assert antes["calories"] == pytest.approx(330)
+        assert despues == antes
+
+    def test_only_counts_logs_from_that_day(
+        self, client, profile_payload, food_payload
+    ):
+        client.put("/profile", json=profile_payload)
+        food_id = create_food(client, food_payload)
+        client.post(
+            "/logs", json={"food_id": food_id, "grams": 200, "date": "2026-08-11"}
+        )
 
         consumed = client.get("/summary/2026-08-10").json()["consumed"]
 
