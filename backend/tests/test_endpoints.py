@@ -1,4 +1,8 @@
+from datetime import date
+
 import pytest
+
+from app.models.log import Log
 
 
 def create_food(client, food_payload) -> int:
@@ -58,6 +62,45 @@ class TestFoods:
         response = client.post("/foods", json={**food_payload, field: -1})
 
         assert response.status_code == 422
+
+    def test_rejects_a_name_that_is_too_long(self, client, food_payload):
+        response = client.post("/foods", json={**food_payload, "name": "a" * 121})
+
+        assert response.status_code == 422
+
+    def test_rejects_an_empty_name(self, client, food_payload):
+        response = client.post("/foods", json={**food_payload, "name": ""})
+
+        assert response.status_code == 422
+
+    def test_rejects_a_blank_name(self, client, food_payload):
+        response = client.post("/foods", json={**food_payload, "name": "   "})
+
+        assert response.status_code == 422
+
+    def test_trims_the_name(self, client, food_payload):
+        create_food(client, {**food_payload, "name": "  Arroz  "})
+
+        assert client.get("/foods").json()[0]["name"] == "Arroz"
+
+    def test_rejects_infinity_without_poisoning_the_catalog(self, client):
+        response = client.post(
+            "/foods",
+            content=(
+                b'{"name":"X","cal_100g":Infinity,"protein_100g":1,'
+                b'"carbs_100g":1,"fat_100g":1}'
+            ),
+            headers={"content-type": "application/json"},
+        )
+
+        assert response.status_code == 422
+        assert client.get("/foods").json() == []
+
+    def test_validation_errors_keep_the_detail_shape(self, client, food_payload):
+        response = client.post("/foods", json={**food_payload, "cal_100g": -1})
+
+        assert response.status_code == 422
+        assert "msg" in response.json()["detail"][0]
 
 
 class TestLogs:
@@ -120,17 +163,78 @@ class TestLogs:
         assert log["food"]["name"] == "Pechuga de pollo"
         assert log["food"]["is_deleted"] is True
 
-    def test_an_orphan_log_arrives_with_food_null(self, client):
-        client.post("/logs", json={"food_id": 999, "grams": 100, "date": "2026-08-10"})
+    def test_an_orphan_log_arrives_with_food_null(self, client, session):
+        session.add(Log(food_id=999, grams=100, date=date(2026, 8, 10)))
+        session.commit()
 
         assert client.get("/logs").json()[0]["food"] is None
 
-    def test_accepts_a_food_id_that_does_not_exist(self, client):
+    def test_rejects_a_food_id_that_does_not_exist(self, client):
         response = client.post(
             "/logs", json={"food_id": 999, "grams": 100, "date": "2026-08-10"}
         )
 
+        assert response.status_code == 404
+
+    def test_rejects_a_deleted_food(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        client.delete(f"/foods/{food_id}")
+
+        response = client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        )
+
+        assert response.status_code == 404
+
+    def test_update_changes_the_grams(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        log_id = client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        ).json()["id"]
+
+        response = client.put(
+            f"/logs/{log_id}",
+            json={"food_id": food_id, "grams": 150, "date": "2026-08-10"},
+        )
+
         assert response.status_code == 200
+        assert client.get("/logs").json()[0]["grams"] == 150
+
+    def test_update_still_works_when_its_food_was_deleted(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        log_id = client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        ).json()["id"]
+        client.delete(f"/foods/{food_id}")
+
+        response = client.put(
+            f"/logs/{log_id}",
+            json={"food_id": food_id, "grams": 150, "date": "2026-08-10"},
+        )
+
+        assert response.status_code == 200
+        assert client.get("/logs").json()[0]["grams"] == 150
+
+    def test_rejects_absurd_grams(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        response = client.post(
+            "/logs", json={"food_id": food_id, "grams": 1e12, "date": "2026-08-10"}
+        )
+
+        assert response.status_code == 422
+
+    def test_update_rejects_a_food_id_that_does_not_exist(self, client, food_payload):
+        food_id = create_food(client, food_payload)
+        log_id = client.post(
+            "/logs", json={"food_id": food_id, "grams": 100, "date": "2026-08-10"}
+        ).json()["id"]
+
+        response = client.put(
+            f"/logs/{log_id}",
+            json={"food_id": 999, "grams": 150, "date": "2026-08-10"},
+        )
+
+        assert response.status_code == 404
 
 
 class TestProfile:
