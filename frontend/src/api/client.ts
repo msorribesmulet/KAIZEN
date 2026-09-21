@@ -1,4 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
+const CSRF_COOKIE = import.meta.env.VITE_CSRF_COOKIE ?? 'kaizen_csrf';
+const CSRF_HEADER = 'X-CSRF-Token';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -8,6 +10,19 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
   }
+}
+
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
+function readCsrfToken(): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]*)`));
+  const value = match?.[1];
+
+  return value === undefined ? null : decodeURIComponent(value);
 }
 
 function readDetail(detail: unknown, fallback: string): string {
@@ -24,12 +39,18 @@ function readDetail(detail: unknown, fallback: string): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const csrf = readCsrfToken();
   let response: Response;
 
   try {
     response = await fetch(`${BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrf !== null && { [CSRF_HEADER]: csrf }),
+        ...init?.headers,
+      },
     });
   } catch {
     throw new ApiError(0, 'No se pudo conectar con el servidor');
@@ -42,6 +63,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       detail = undefined;
     }
+
+    if (response.status === 401) onUnauthorized?.();
+
     throw new ApiError(response.status, readDetail(detail, `Error ${response.status}`));
   }
 

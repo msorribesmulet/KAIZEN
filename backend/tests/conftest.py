@@ -3,8 +3,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
+from app.config import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from app.database import get_session
 from app.main import app
+from app.services import security
+
+security.BCRYPT_ROUNDS = 4
+
+CREDENTIALS = {"email": "marc@ejemplo.com", "password": "secreto123"}
+OTHER_CREDENTIALS = {"email": "otra@ejemplo.com", "password": "secreto456"}
 
 
 @pytest.fixture(name="session")
@@ -19,11 +26,39 @@ def session_fixture():
         yield session
 
 
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
+@pytest.fixture(name="make_client")
+def make_client_fixture(session: Session):
     app.dependency_overrides[get_session] = lambda: session
-    yield TestClient(app)
+
+    def make(credentials: dict | None = None) -> TestClient:
+        client = TestClient(app, base_url="https://testserver")
+        if credentials is not None:
+            client.post("/auth/register", json=credentials)
+            client.headers[CSRF_HEADER_NAME] = client.cookies[CSRF_COOKIE_NAME]
+        return client
+
+    yield make
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(name="anon_client")
+def anon_client_fixture(make_client) -> TestClient:
+    return make_client()
+
+
+@pytest.fixture(name="client")
+def client_fixture(make_client) -> TestClient:
+    return make_client(CREDENTIALS)
+
+
+@pytest.fixture(name="other_client")
+def other_client_fixture(make_client) -> TestClient:
+    return make_client(OTHER_CREDENTIALS)
+
+
+@pytest.fixture(name="user_id")
+def user_id_fixture(client: TestClient) -> int:
+    return client.get("/auth/me").json()["id"]
 
 
 @pytest.fixture(name="profile_payload")

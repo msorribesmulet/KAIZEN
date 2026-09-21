@@ -1,57 +1,68 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, not_, select
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, col, not_, or_, select
+
 from app.database import get_session
+from app.dependencies import get_current_user
 from app.models.food import Food
+from app.models.user import User
 from app.schemas.food import FoodCreate
+from app.services.catalog import owned_food
 
 router = APIRouter()
 
 
-@router.post("/foods")
-def create_food(food: FoodCreate, session: Session = Depends(get_session)):
-    new_food = Food(
-        name=food.name,
-        cal_100g=food.cal_100g,
-        protein_100g=food.protein_100g,
-        carbs_100g=food.carbs_100g,
-        fat_100g=food.fat_100g,
-    )
+@router.post("/foods", response_model=Food)
+def create_food(
+    food: FoodCreate,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    new_food = Food(**food.model_dump(), user_id=user.id)
     session.add(new_food)
     session.commit()
     session.refresh(new_food)
+
     return new_food
 
 
-@router.get("/foods")
-def get_foods(session: Session = Depends(get_session)):
-    foods = session.exec(select(Food).where(not_(Food.is_deleted))).all()
-    return foods
+@router.get("/foods", response_model=list[Food])
+def get_foods(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    return session.exec(
+        select(Food).where(
+            not_(Food.is_deleted),
+            or_(Food.user_id == user.id, col(Food.user_id).is_(None)),
+        )
+    ).all()
 
 
 @router.delete("/foods/{food_id}")
-def delete_food(food_id: int, session: Session = Depends(get_session)):
-    food = session.get(Food, food_id)
-    if not food or food.is_deleted:
-        raise HTTPException(status_code=404, detail="Food not found")
+def delete_food(
+    food_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    food = owned_food(food_id, user, session)
     food.is_deleted = True
     session.add(food)
     session.commit()
+
     return {"ok": True}
 
 
-@router.put("/foods/{food_id}")
+@router.put("/foods/{food_id}", response_model=Food)
 def update_food(
-    food_id: int, food: FoodCreate, session: Session = Depends(get_session)
+    food_id: int,
+    food: FoodCreate,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    db_food = session.get(Food, food_id)
-    if not db_food or db_food.is_deleted:
-        raise HTTPException(status_code=404, detail="Food not found")
-    db_food.name = food.name
-    db_food.cal_100g = food.cal_100g
-    db_food.protein_100g = food.protein_100g
-    db_food.carbs_100g = food.carbs_100g
-    db_food.fat_100g = food.fat_100g
+    db_food = owned_food(food_id, user, session)
+    db_food.sqlmodel_update(food.model_dump())
     session.add(db_food)
     session.commit()
     session.refresh(db_food)
+
     return db_food

@@ -23,6 +23,7 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - Objetivo calórico ajustable según el ritmo de pérdida o ganancia de peso deseado
 - Registro de alimentos con valores nutricionales por 100g
 - Cálculo automático de macros según los gramos consumidos
+- Cuentas de usuario: cada uno con sus alimentos, sus registros y su perfil
 - Historial de alimentos reutilizable — los datos se guardan y se autocompletan
 - Resumen diario de calorías y macros consumidos frente al objetivo
 
@@ -35,7 +36,8 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - FastAPI — framework web, moderno y rápido, con documentación automática de la API
 - SQLModel — ORM para trabajar con la base de datos desde Python
 - SQLite — base de datos ligera basada en un único archivo, sin servidor
-- pytest — 48 tests sobre los cálculos y los endpoints
+- bcrypt — cifrado de contraseñas
+- pytest — 116 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
 - pylint y black — estilo y formato del código
 
 **Frontend**
@@ -73,6 +75,11 @@ pip install -r requirements.txt
 cp .env.example .env
 uvicorn app.main:app --reload
 ```
+
+> **Si ya tenías una `kaizen.db` anterior a las cuentas de usuario**, bórrala
+> antes de arrancar. El esquema cambió (las tablas ganaron `user_id`) y el
+> arranque solo crea tablas nuevas, nunca modifica las existentes: con la
+> antigua, la API falla con `no such column: log.user_id`.
 
 Backend disponible en `http://localhost:8000`
 Documentación interactiva de la API en `http://localhost:8000/docs`
@@ -183,14 +190,15 @@ Con el objetivo calórico definido, los macros se reparten por prioridad:
 kaizen/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py          # Punto de entrada de FastAPI y CORS
+│   │   ├── main.py          # Punto de entrada de FastAPI, CORS y CSRF
 │   │   ├── config.py        # Configuración leída del .env
 │   │   ├── database.py      # Conexión a SQLite
+│   │   ├── dependencies.py  # current_user: valida la cookie de sesión
 │   │   ├── models/          # Tablas de la base de datos
 │   │   ├── schemas/         # Modelos de entrada/salida de la API
 │   │   ├── routers/         # Endpoints agrupados por recurso
-│   │   └── services/        # Lógica de negocio (cálculos)
-│   └── tests/               # pytest: cálculos y endpoints
+│   │   └── services/        # Lógica de negocio (cálculos, cifrado, catálogo)
+│   └── tests/               # pytest: cálculos, endpoints y aislamiento
 │
 └── frontend/
     └── src/
@@ -204,7 +212,9 @@ kaizen/
 
 La separación entre `models`, `schemas`, `routers` y `services` mantiene el backend organizado: los modelos definen las tablas, los schemas definen qué entra y sale de la API, los routers gestionan las peticiones y los services contienen la lógica de cálculo.
 
-En el frontend, `store/AppDataProvider` guarda lo global (catálogo de alimentos y perfil), que se carga una vez al arrancar, y `store/useDayData` sirve lo que depende del día seleccionado (registros y resumen), que se recarga al cambiar de fecha.
+En el frontend, `store/AuthProvider` sabe quién ha entrado y envuelve a todo lo demás; `store/AppDataProvider` guarda lo global (catálogo de alimentos y perfil) y **cuelga de las rutas protegidas**, para que no pida datos antes de que haya sesión. `store/useDayData` sirve lo que depende del día seleccionado (registros y resumen), que se recarga al cambiar de fecha.
+
+Como la cookie de sesión es `httpOnly`, el navegador no puede leerla: al arrancar, la app pregunta a `GET /auth/me` si hay sesión. Un `401` ahí no es un fallo, es la respuesta.
 
 ---
 
@@ -217,17 +227,22 @@ En el frontend, `store/AppDataProvider` guarda lo global (catálogo de alimentos
 - [x] Resumen diario
 - [x] Interfaz conectada a la API
 
+**V4 — Cuentas de usuario** ✅
+- [x] Registro e inicio de sesión con contraseña cifrada
+- [x] Sesión en cookie `httpOnly`, con protección CSRF
+- [x] Cada usuario ve solo su perfil, sus registros y sus alimentos
+
 **Próximas versiones**
 - [ ] V2 — Scraping de Mercadona para base de datos de productos
 - [ ] V3 — Escáner de código de barras desde el móvil *(el motivo por el que existe el proyecto)*
-- [ ] V4 — Login y soporte multiusuario
 - [ ] V5 — Despliegue con demo pública
 
 La PWA ya está configurada: la app es instalable en el móvil desde el navegador.
 
 ### Limitaciones conocidas
 
-- **Un solo usuario.** No hay autenticación todavía; la pantalla de login es decorativa y el perfil es único. Llega en V4.
+- **Sin recuperación de contraseña.** Si la olvidas, no hay forma de recuperar la cuenta. Tampoco se verifica el correo al registrarse.
+- **El catálogo de alimentos admite alimentos globales** (`user_id` nulo), pensados para los productos del scraping de V2. Todavía no hay ninguno ni forma de crearlos desde la API: hoy cada usuario solo ve los suyos.
 - **Los alimentos borrados no se eliminan.** Se ocultan del catálogo pero la fila se conserva, para que los días en que los comiste sigan cuadrando. No hay pantalla para restaurarlos ni para vaciar la papelera.
 - **SQLite.** Perfecto para uso local; para desplegarlo con varios usuarios haría falta PostgreSQL.
 

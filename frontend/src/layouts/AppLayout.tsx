@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Logo, LogoMark } from '@/components/Logo';
 import { HomeIcon, ListIcon, LogoutIcon, PlusIcon, UserIcon } from '@/components/icons';
+import { useAuth } from '@/store/authContext';
 import { cn } from '@/utils/cn';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -24,6 +25,12 @@ const NAV_ITEMS: NavItem[] = [
  */
 export function AppLayout() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -58,8 +65,7 @@ export function AppLayout() {
 
         <button
           type="button"
-          // TODO: conectar con API — POST /auth/logout y limpiar el token
-          onClick={() => navigate('/login')}
+          onClick={() => void handleLogout()}
           className="text-ink-muted hover:bg-surface-2 hover:text-ink flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
         >
           <LogoutIcon className="size-5" />
@@ -78,8 +84,7 @@ export function AppLayout() {
           <button
             type="button"
             aria-label="Cerrar sesión"
-            // TODO: conectar con API — POST /auth/logout y limpiar el token
-            onClick={() => navigate('/login')}
+            onClick={() => void handleLogout()}
             className="text-ink-muted hover:bg-surface-2 hover:text-ink rounded-lg p-2 transition-colors"
           >
             <LogoutIcon className="size-5" />

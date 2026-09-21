@@ -248,12 +248,7 @@ export function AddMealPage() {
 
               {saveError ? <p className="text-danger text-sm">{saveError}</p> : null}
 
-              <Button
-                size="lg"
-                fullWidth
-                disabled={!validGrams || saving}
-                onClick={handleConfirm}
-              >
+              <Button size="lg" fullWidth disabled={!validGrams || saving} onClick={handleConfirm}>
                 <CheckIcon className="size-5" />
                 {saving ? 'Guardando…' : 'Añadir al registro'}
               </Button>
