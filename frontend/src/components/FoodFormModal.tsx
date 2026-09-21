@@ -15,6 +15,8 @@ interface FoodFormModalProps {
 /** Los campos numéricos se manejan como texto para no pelear con el input. */
 type FormState = Record<keyof FoodInput, string>;
 
+const MAX_NAME_LENGTH = 120;
+
 const EMPTY: FormState = {
   name: '',
   cal_100g: '',
@@ -62,6 +64,9 @@ export function FoodFormModal({ open, food, onClose, onSubmit }: FoodFormModalPr
 
     const nextErrors: Partial<Record<keyof FoodInput, string>> = {};
     if (!name) nextErrors.name = 'El nombre es obligatorio.';
+    else if (name.length > MAX_NAME_LENGTH) {
+      nextErrors.name = `El nombre no puede pasar de ${MAX_NAME_LENGTH} caracteres.`;
+    }
     for (const [field, value] of Object.entries(numbers) as [keyof typeof numbers, number][]) {
       if (form[field].trim() === '' || !Number.isFinite(value) || value < 0) {
         nextErrors[field] = 'Introduce un número igual o mayor que 0.';
@@ -97,6 +102,7 @@ export function FoodFormModal({ open, food, onClose, onSubmit }: FoodFormModalPr
         <Input
           label="Nombre"
           placeholder="Ej. Pechuga de pollo"
+          maxLength={MAX_NAME_LENGTH}
           value={form.name}
           onChange={(e) => set('name', e.target.value)}
           {...(errors.name !== undefined && { error: errors.name })}
