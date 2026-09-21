@@ -16,3 +16,7 @@ SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "kaizen_session")
 SESSION_DAYS = int(os.getenv("SESSION_DAYS", "7"))
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
+
+CSRF_COOKIE_NAME = os.getenv("CSRF_COOKIE_NAME", "kaizen_csrf")
+CSRF_HEADER_NAME = "X-CSRF-Token"
+CSRF_EXEMPT_PATHS = frozenset({"/auth/register", "/auth/login"})

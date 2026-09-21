@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from app.config import (
     COOKIE_SAMESITE,
     COOKIE_SECURE,
+    CSRF_COOKIE_NAME,
     SESSION_COOKIE_NAME,
     SESSION_DAYS,
 )
@@ -25,6 +26,15 @@ router = APIRouter(prefix="/auth")
 
 def _open_session(user: User, response: Response, session: Session) -> None:
     token = new_session_token()
+    response.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=new_session_token(),
+        httponly=False,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=SESSION_DAYS * 24 * 60 * 60,
+        path="/",
+    )
     session.add(
         UserSession(
             user_id=user.id,
@@ -96,6 +106,7 @@ def logout(
             session.commit()
 
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    response.delete_cookie(CSRF_COOKIE_NAME, path="/")
 
     return {"ok": True}
 

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
+from app.config import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from app.database import get_session
 from app.main import app
 from app.services import security
@@ -33,6 +34,7 @@ def make_client_fixture(session: Session):
         client = TestClient(app, base_url="https://testserver")
         if credentials is not None:
             client.post("/auth/register", json=credentials)
+            client.headers[CSRF_HEADER_NAME] = client.cookies[CSRF_COOKIE_NAME]
         return client
 
     yield make
