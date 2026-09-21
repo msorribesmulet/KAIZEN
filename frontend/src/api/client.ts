@@ -1,5 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
-const CSRF_COOKIE = 'kaizen_csrf';
+const CSRF_COOKIE = import.meta.env.VITE_CSRF_COOKIE ?? 'kaizen_csrf';
 const CSRF_HEADER = 'X-CSRF-Token';
 
 export class ApiError extends Error {

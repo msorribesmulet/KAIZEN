@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '@/api/client';
 import { LogoMark } from '@/components/Logo';
 import { Button } from '@/components/ui/Button';
@@ -27,7 +27,9 @@ function messageFor(cause: unknown, mode: Mode): string {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, register } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +52,7 @@ export function LoginPage() {
 
     try {
       await (isRegister ? register({ email, password }) : login({ email, password }));
-      navigate('/dashboard', { replace: true });
+      navigate(from, { replace: true });
     } catch (cause: unknown) {
       setError(messageFor(cause, mode));
     } finally {

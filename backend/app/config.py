@@ -19,4 +19,4 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 
 CSRF_COOKIE_NAME = os.getenv("CSRF_COOKIE_NAME", "kaizen_csrf")
 CSRF_HEADER_NAME = "X-CSRF-Token"
-CSRF_EXEMPT_PATHS = frozenset({"/auth/register", "/auth/login"})
+CSRF_EXEMPT_PATHS = frozenset({"/auth/register", "/auth/login", "/auth/logout"})

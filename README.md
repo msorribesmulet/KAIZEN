@@ -37,7 +37,7 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - SQLModel — ORM para trabajar con la base de datos desde Python
 - SQLite — base de datos ligera basada en un único archivo, sin servidor
 - bcrypt — cifrado de contraseñas
-- pytest — 114 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
+- pytest — 116 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
 - pylint y black — estilo y formato del código
 
 **Frontend**
@@ -75,6 +75,11 @@ pip install -r requirements.txt
 cp .env.example .env
 uvicorn app.main:app --reload
 ```
+
+> **Si ya tenías una `kaizen.db` anterior a las cuentas de usuario**, bórrala
+> antes de arrancar. El esquema cambió (las tablas ganaron `user_id`) y el
+> arranque solo crea tablas nuevas, nunca modifica las existentes: con la
+> antigua, la API falla con `no such column: log.user_id`.
 
 Backend disponible en `http://localhost:8000`
 Documentación interactiva de la API en `http://localhost:8000/docs`

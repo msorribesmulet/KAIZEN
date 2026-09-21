@@ -17,7 +17,6 @@ export function App() {
           {/* Login fuera del layout: pantalla a página completa, sin navegación */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* El store cuelga de aquí dentro: sin sesión no hay datos que pedir */}
           <Route element={<RequireAuth />}>
             <Route
               element={

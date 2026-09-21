@@ -127,6 +127,14 @@ class TestProfileBetweenUsers:
 
         assert other_client.get("/profile").status_code == 404
 
+    def test_a_user_cannot_delete_the_profile_of_another(
+        self, client, other_client, profile_payload
+    ):
+        client.put("/profile", json=profile_payload)
+
+        assert other_client.delete("/profile").status_code == 404
+        assert client.get("/profile").status_code == 200
+
 
 class TestSummaryBetweenUsers:
     def test_the_summary_only_counts_your_own_food(

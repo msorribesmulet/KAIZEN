@@ -8,7 +8,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [checking, setChecking] = useState(true);
 
-  // La cookie es httpOnly, así que la sesión solo se puede comprobar preguntando.
   useEffect(() => {
     let cancelled = false;
 
@@ -29,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Si el servidor responde 401, la sesión caducó mientras la app estaba abierta.
   useEffect(() => {
     setUnauthorizedHandler(() => setAccount(null));
 
@@ -45,11 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      setAccount(null);
-    }
+    await authApi.logout().catch(() => undefined);
+    setAccount(null);
   }, []);
 
   const value = useMemo<Auth>(

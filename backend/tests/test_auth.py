@@ -149,6 +149,11 @@ class TestCsrf:
         assert response.status_code == 403
         assert response.headers["access-control-allow-origin"] == FRONTEND_URL
 
+    def test_logout_works_without_the_header(self, client):
+        del client.headers[CSRF_HEADER_NAME]
+
+        assert client.post("/auth/logout").status_code == 200
+
     def test_reading_does_not_need_the_header(self, client):
         del client.headers[CSRF_HEADER_NAME]
 
