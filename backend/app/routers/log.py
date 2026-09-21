@@ -11,6 +11,9 @@ router = APIRouter()
 
 @router.post("/logs")
 def create_log(log: LogCreate, session: Session = Depends(get_session)):
+    food = session.get(Food, log.food_id)
+    if not food or food.is_deleted:
+        raise HTTPException(status_code=404, detail="Food not found")
     new_log = Log(
         food_id=log.food_id,
         grams=log.grams,
@@ -55,6 +58,9 @@ def update_log(log_id: int, log: LogCreate, session: Session = Depends(get_sessi
     db_log = session.get(Log, log_id)
     if not db_log:
         raise HTTPException(status_code=404, detail="Log not found")
+    food = session.get(Food, log.food_id)
+    if not food or (food.is_deleted and log.food_id != db_log.food_id):
+        raise HTTPException(status_code=404, detail="Food not found")
     db_log.food_id = log.food_id
     db_log.grams = log.grams
     db_log.date = log.date

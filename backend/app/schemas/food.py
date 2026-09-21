@@ -1,9 +1,17 @@
-from sqlmodel import SQLModel, Field
+from typing import Annotated
+
+from pydantic import Field, StringConstraints
+from sqlmodel import SQLModel
+
+FoodName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)
+]
+Per100g = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 
 
 class FoodCreate(SQLModel):
-    name: str
-    cal_100g: float = Field(ge=0)
-    protein_100g: float = Field(ge=0)
-    carbs_100g: float = Field(ge=0)
-    fat_100g: float = Field(ge=0)
+    name: FoodName
+    cal_100g: Per100g
+    protein_100g: Per100g
+    carbs_100g: Per100g
+    fat_100g: Per100g
