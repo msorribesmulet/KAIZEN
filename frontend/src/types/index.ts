@@ -63,6 +63,18 @@ export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'ver
 
 export type Goal = 'lose' | 'maintain' | 'gain';
 
+/** Cuenta con la que se inicia sesión. No confundir con `User`, que es el perfil. */
+export interface Account {
+  id: number;
+  email: string;
+}
+
+/** Credenciales de acceso, tal y como las espera la API. */
+export interface Credentials {
+  email: string;
+  password: string;
+}
+
 /** Perfil del usuario con los datos necesarios para calcular su objetivo. */
 export interface User {
   id: number;
