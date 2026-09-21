@@ -25,15 +25,6 @@ from app.routers import auth
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
@@ -45,12 +36,21 @@ async def csrf_protection(request: Request, call_next):
     if SESSION_COOKIE_NAME not in request.cookies:
         return await call_next(request)
 
-    sent = request.headers.get(CSRF_HEADER_NAME)
-    stored = request.cookies.get(CSRF_COOKIE_NAME)
-    if not sent or not stored or not compare_digest(sent, stored):
+    sent = request.headers.get(CSRF_HEADER_NAME, "")
+    stored = request.cookies.get(CSRF_COOKIE_NAME, "")
+    if not sent or not stored or not compare_digest(sent.encode(), stored.encode()):
         return JSONResponse(status_code=403, content={"detail": "CSRF token invalid"})
 
     return await call_next(request)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_URL],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(RequestValidationError)

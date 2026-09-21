@@ -2,8 +2,14 @@ from datetime import datetime, timedelta, timezone
 
 from sqlmodel import select
 
-from app.config import CSRF_COOKIE_NAME, CSRF_HEADER_NAME, SESSION_COOKIE_NAME
+from app.config import (
+    CSRF_COOKIE_NAME,
+    CSRF_HEADER_NAME,
+    FRONTEND_URL,
+    SESSION_COOKIE_NAME,
+)
 from app.models.user import UserSession
+from app.routers import auth as auth_router
 
 CREDENTIALS = {"email": "marc@ejemplo.com", "password": "secreto123"}
 
@@ -63,6 +69,19 @@ class TestLogin:
 
         assert anon_client.post("/auth/login", json=unknown).status_code == 401
 
+    def test_an_unknown_email_still_verifies_a_password(self, anon_client, monkeypatch):
+        checked = []
+        monkeypatch.setattr(
+            auth_router,
+            "verify_password",
+            lambda *args: bool(checked.append(args)) and False,
+        )
+        unknown = {"email": "nadie@ejemplo.com", "password": "secreto123"}
+
+        anon_client.post("/auth/login", json=unknown)
+
+        assert checked
+
 
 class TestSession:
     def test_without_session_me_is_401(self, anon_client):
@@ -73,6 +92,13 @@ class TestSession:
         anon_client.post("/auth/logout")
 
         assert anon_client.get("/auth/me").status_code == 401
+
+    def test_logout_deletes_the_cookies_the_way_they_were_set(self, client):
+        response = client.post("/auth/logout")
+        deleted = response.headers.get_list("set-cookie")
+
+        assert len(deleted) == 2
+        assert all("secure" in value.lower() for value in deleted)
 
     def test_logout_deletes_the_session_from_the_database(self, anon_client, session):
         register(anon_client)
@@ -105,6 +131,23 @@ class TestCsrf:
         client.headers[CSRF_HEADER_NAME] = "valor-inventado"
 
         assert client.post("/foods", json=food_payload).status_code == 403
+
+    def test_a_non_ascii_header_is_403_and_not_500(self, client, food_payload):
+        raw = {CSRF_HEADER_NAME.lower().encode(): b"\xf1o\xf1o"}
+
+        response = client.post("/foods", json=food_payload, headers=raw)
+
+        assert response.status_code == 403
+
+    def test_the_rejection_carries_cors_headers(self, client, food_payload):
+        client.headers[CSRF_HEADER_NAME] = "valor-inventado"
+
+        response = client.post(
+            "/foods", json=food_payload, headers={"Origin": FRONTEND_URL}
+        )
+
+        assert response.status_code == 403
+        assert response.headers["access-control-allow-origin"] == FRONTEND_URL
 
     def test_reading_does_not_need_the_header(self, client):
         del client.headers[CSRF_HEADER_NAME]

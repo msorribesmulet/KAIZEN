@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+from functools import lru_cache
 
 import bcrypt
 
@@ -15,6 +16,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode(), password_hash.encode())
+
+
+@lru_cache(maxsize=1)
+def decoy_hash() -> str:
+    return hash_password(secrets.token_urlsafe(16))
 
 
 def new_session_token() -> str:

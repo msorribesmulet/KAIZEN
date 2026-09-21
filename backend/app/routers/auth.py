@@ -15,6 +15,7 @@ from app.dependencies import get_current_user
 from app.models.user import User, UserSession
 from app.schemas.auth import Credentials, UserRead
 from app.services.security import (
+    decoy_hash,
     hash_password,
     hash_token,
     new_session_token,
@@ -83,7 +84,11 @@ def login(
     session: Session = Depends(get_session),
 ) -> User:
     user = session.exec(select(User).where(User.email == credentials.email)).first()
-    if not user or not verify_password(credentials.password, user.password_hash):
+    if not user:
+        verify_password(credentials.password, decoy_hash())
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     _open_session(user, response, session)
@@ -105,8 +110,13 @@ def logout(
             session.delete(stored)
             session.commit()
 
-    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
-    response.delete_cookie(CSRF_COOKIE_NAME, path="/")
+    for name in (SESSION_COOKIE_NAME, CSRF_COOKIE_NAME):
+        response.delete_cookie(
+            name,
+            path="/",
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+        )
 
     return {"ok": True}
 
