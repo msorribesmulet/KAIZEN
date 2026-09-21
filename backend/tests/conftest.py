@@ -22,7 +22,7 @@ def session_fixture():
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
     app.dependency_overrides[get_session] = lambda: session
-    yield TestClient(app)
+    yield TestClient(app, base_url="https://testserver")
     app.dependency_overrides.clear()
 
 

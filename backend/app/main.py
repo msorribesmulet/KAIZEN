@@ -13,6 +13,7 @@ from app.routers import summary
 from app.models.profile import Profile
 from app.routers import profile
 from app.models.user import User, UserSession
+from app.routers import auth
 
 app = FastAPI()
 
@@ -34,6 +35,7 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     return JSONResponse(status_code=422, content=jsonable_encoder({"detail": errors}))
 
 
+app.include_router(auth.router)
 app.include_router(food.router)
 app.include_router(log.router)
 app.include_router(summary.router)
