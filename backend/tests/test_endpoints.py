@@ -163,8 +163,10 @@ class TestLogs:
         assert log["food"]["name"] == "Pechuga de pollo"
         assert log["food"]["is_deleted"] is True
 
-    def test_an_orphan_log_arrives_with_food_null(self, client, session):
-        session.add(Log(food_id=999, grams=100, date=date(2026, 8, 10)))
+    def test_an_orphan_log_arrives_with_food_null(self, client, session, user_id):
+        session.add(
+            Log(user_id=user_id, food_id=999, grams=100, date=date(2026, 8, 10))
+        )
         session.commit()
 
         assert client.get("/logs").json()[0]["food"] is None

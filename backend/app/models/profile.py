@@ -23,6 +23,7 @@ class Sex(str, Enum):
 
 class Profile(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
     weight_kg: float
     height_cm: float
     age: int
