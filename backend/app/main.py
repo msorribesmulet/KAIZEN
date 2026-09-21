@@ -12,6 +12,7 @@ from app.routers import log
 from app.routers import summary
 from app.models.profile import Profile
 from app.routers import profile
+from app.models.user import User, UserSession
 
 app = FastAPI()
 
