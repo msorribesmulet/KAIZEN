@@ -4,3 +4,4 @@ sqlmodel
 python-dotenv
 bcrypt
 pydantic[email]
+psycopg2-binary

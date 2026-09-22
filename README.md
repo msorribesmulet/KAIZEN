@@ -107,6 +107,18 @@ python -m pytest tests/ -q
 
 Usan una base de datos en memoria, así que no tocan tu `kaizen.db`.
 
+En producción la base es PostgreSQL, y hay diferencias que SQLite no enseña
+(las fechas con zona horaria, o las claves foráneas, que PostgreSQL sí
+comprueba). Para pasar la misma suite contra PostgreSQL:
+
+```bash
+createdb kaizen_test
+TEST_DATABASE_URL=postgresql://localhost/kaizen_test python -m pytest tests/ -q
+```
+
+Conviene hacerlo antes de desplegar: así se encontró que las sesiones
+caducaban dos horas tarde en PostgreSQL.
+
 ### Hook de pre-commit (recomendado)
 
 El repositorio incluye un hook que aborta el commit si intentas subir un `.env`,

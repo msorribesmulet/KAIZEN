@@ -8,7 +8,13 @@ ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_PATH)
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///kaizen.db")
+def normalize_database_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///kaizen.db"))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 SQL_ECHO = os.getenv("SQL_ECHO", "false").lower() == "true"
 

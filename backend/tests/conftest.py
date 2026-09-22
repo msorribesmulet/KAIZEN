@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
@@ -14,13 +16,21 @@ CREDENTIALS = {"email": "marc@ejemplo.com", "password": "secreto123"}
 OTHER_CREDENTIALS = {"email": "otra@ejemplo.com", "password": "secreto456"}
 
 
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
+
+
 @pytest.fixture(name="session")
 def session_fixture():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    if TEST_DATABASE_URL:
+        engine = create_engine(TEST_DATABASE_URL)
+        SQLModel.metadata.drop_all(engine)
+    else:
+        engine = create_engine(
+            "sqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
