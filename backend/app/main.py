@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from secrets import compare_digest
 
 from fastapi import FastAPI, Request
@@ -11,6 +12,7 @@ from app.config import (
     CSRF_HEADER_NAME,
     FRONTEND_URL,
     SESSION_COOKIE_NAME,
+    STATIC_DIR,
 )
 from app.database import create_db_and_tables
 from app.models.food import Food
@@ -22,8 +24,16 @@ from app.models.profile import Profile
 from app.routers import profile
 from app.models.user import User, UserSession
 from app.routers import auth
+from app.spa import serve_spa
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -62,13 +72,16 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     return JSONResponse(status_code=422, content=jsonable_encoder({"detail": errors}))
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 app.include_router(auth.router)
 app.include_router(food.router)
 app.include_router(log.router)
 app.include_router(summary.router)
 app.include_router(profile.router)
 
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
+if STATIC_DIR:
+    serve_spa(app, STATIC_DIR)

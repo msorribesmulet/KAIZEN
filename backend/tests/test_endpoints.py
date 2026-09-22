@@ -1,8 +1,14 @@
+import os
 from datetime import date
 
 import pytest
 
 from app.models.log import Log
+
+SQLITE_ONLY = pytest.mark.skipif(
+    bool(os.getenv("TEST_DATABASE_URL")),
+    reason="PostgreSQL comprueba las claves foraneas: el huerfano no se puede crear",
+)
 
 
 def create_food(client, food_payload) -> int:
@@ -163,6 +169,7 @@ class TestLogs:
         assert log["food"]["name"] == "Pechuga de pollo"
         assert log["food"]["is_deleted"] is True
 
+    @SQLITE_ONLY
     def test_an_orphan_log_arrives_with_food_null(self, client, session, user_id):
         session.add(
             Log(user_id=user_id, food_id=999, grams=100, date=date(2026, 8, 10))

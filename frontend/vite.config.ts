@@ -10,6 +10,19 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        navigateFallbackDenylist: [
+          /^\/auth\//,
+          /^\/foods/,
+          /^\/logs/,
+          /^\/profile/,
+          /^\/summary\//,
+          /^\/health$/,
+          /^\/docs/,
+          /^\/redoc/,
+          /^\/openapi\.json$/,
+        ],
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Kaizen — Seguimiento nutricional',
