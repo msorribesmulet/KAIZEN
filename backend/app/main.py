@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from secrets import compare_digest
 
 from fastapi import FastAPI, Request
@@ -23,7 +24,14 @@ from app.routers import profile
 from app.models.user import User, UserSession
 from app.routers import auth
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -62,13 +70,13 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     return JSONResponse(status_code=422, content=jsonable_encoder({"detail": errors}))
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 app.include_router(auth.router)
 app.include_router(food.router)
 app.include_router(log.router)
 app.include_router(summary.router)
 app.include_router(profile.router)
-
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
