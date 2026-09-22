@@ -12,6 +12,7 @@ from app.config import (
     CSRF_HEADER_NAME,
     FRONTEND_URL,
     SESSION_COOKIE_NAME,
+    STATIC_DIR,
 )
 from app.database import create_db_and_tables
 from app.models.food import Food
@@ -23,6 +24,7 @@ from app.models.profile import Profile
 from app.routers import profile
 from app.models.user import User, UserSession
 from app.routers import auth
+from app.spa import serve_spa
 
 
 @asynccontextmanager
@@ -80,3 +82,6 @@ app.include_router(food.router)
 app.include_router(log.router)
 app.include_router(summary.router)
 app.include_router(profile.router)
+
+if STATIC_DIR:
+    serve_spa(app, STATIC_DIR)
