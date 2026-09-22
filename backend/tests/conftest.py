@@ -18,6 +18,13 @@ OTHER_CREDENTIALS = {"email": "otra@ejemplo.com", "password": "secreto456"}
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
 
+if TEST_DATABASE_URL and "test" not in TEST_DATABASE_URL.rsplit("/", 1)[-1]:
+    raise RuntimeError(
+        "La suite borra todas las tablas antes de cada test. Por seguridad solo "
+        "acepta una base cuyo nombre contenga 'test'. Recibido: "
+        + TEST_DATABASE_URL.rsplit("/", 1)[-1]
+    )
+
 
 @pytest.fixture(name="session")
 def session_fixture():
@@ -34,6 +41,8 @@ def session_fixture():
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
+
+    engine.dispose()
 
 
 @pytest.fixture(name="make_client")
