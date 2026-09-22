@@ -36,6 +36,12 @@ class TestSpa:
         assert response.status_code == 200
         assert "kaizen" in response.text
 
+    def test_the_root_is_always_the_app(self, tmp_path):
+        response = make_client(tmp_path).get("/", headers=FETCH)
+
+        assert response.status_code == 200
+        assert "kaizen" in response.text
+
     def test_the_api_still_wins(self, tmp_path):
         assert make_client(tmp_path).get("/foods").json() == ["de la api"]
 

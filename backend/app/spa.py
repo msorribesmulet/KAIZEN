@@ -10,6 +10,9 @@ def serve_spa(app: FastAPI, static_dir: str) -> None:
 
     @app.get("/{full_path:path}")
     def spa(full_path: str, request: Request) -> FileResponse:
+        if not full_path:
+            return FileResponse(index)
+
         asked = (root / full_path).resolve()
         if asked.is_file() and root in asked.parents:
             return FileResponse(asked)
