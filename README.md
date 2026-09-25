@@ -35,9 +35,9 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - Python — lenguaje principal de la lógica y la API
 - FastAPI — framework web, moderno y rápido, con documentación automática de la API
 - SQLModel — ORM para trabajar con la base de datos desde Python
-- SQLite — base de datos ligera basada en un único archivo, sin servidor
+- SQLite en desarrollo, PostgreSQL en producción — el mismo código sirve para los dos
 - bcrypt — cifrado de contraseñas
-- pytest — 116 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
+- pytest — 126 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
 - pylint y black — estilo y formato del código
 
 **Frontend**
@@ -47,6 +47,9 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - React Router — navegación entre pantallas
 - vite-plugin-pwa — instalable en el móvil
 - pnpm — gestor de paquetes
+
+**Despliegue**
+- Docker — imagen de dos etapas: Node compila el frontend y Python lo sirve
 
 El frontend habla con el backend por HTTP; no comparten código. Las fórmulas
 nutricionales están implementadas en los dos lados a propósito: el servidor es
@@ -256,7 +259,7 @@ La PWA ya está configurada: la app es instalable en el móvil desde el navegado
 - **Sin recuperación de contraseña.** Si la olvidas, no hay forma de recuperar la cuenta. Tampoco se verifica el correo al registrarse.
 - **El catálogo de alimentos admite alimentos globales** (`user_id` nulo), pensados para los productos del scraping de V2. Todavía no hay ninguno ni forma de crearlos desde la API: hoy cada usuario solo ve los suyos.
 - **Los alimentos borrados no se eliminan.** Se ocultan del catálogo pero la fila se conserva, para que los días en que los comiste sigan cuadrando. No hay pantalla para restaurarlos ni para vaciar la papelera.
-- **SQLite.** Perfecto para uso local; para desplegarlo con varios usuarios haría falta PostgreSQL.
+- **Todavía no está desplegado.** El código está listo y probado contra PostgreSQL, pero no hay demo pública que visitar.
 
 ---
 
