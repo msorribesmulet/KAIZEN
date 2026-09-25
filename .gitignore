@@ -74,10 +74,18 @@ dev-dist/
 .DS_Store
 Thumbs.db
 
+# --- CLAUDE CODE ---
+# Nada de esto sube: es cómo trabajo yo, no parte del proyecto.
+.claude/
+
 # --- VARIOS ---
 *.tmp
 *.bak
 
 # --- NOTAS PERSONALES ---
 Notas/
+# Las dos grafías: macOS no distingue mayúsculas y para él CLAUDE.md es el
+# mismo archivo, pero en Linux serían dos y solo una quedaría tapada.
 Claude.md
+CLAUDE.md
+AGENTS.md
