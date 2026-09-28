@@ -48,6 +48,12 @@ describe('calcTDEE', () => {
     expect(calcTDEE(1000, 'sedentary')).toBe(1200);
     expect(calcTDEE(1000, 'very_active')).toBe(1900);
   });
+
+  it('cada nivel intermedio tiene su propio factor', () => {
+    expect(calcTDEE(1000, 'light')).toBe(1375);
+    expect(calcTDEE(1000, 'moderate')).toBe(1550);
+    expect(calcTDEE(1000, 'active')).toBe(1725);
+  });
 });
 
 describe('calcTargetCalories', () => {
