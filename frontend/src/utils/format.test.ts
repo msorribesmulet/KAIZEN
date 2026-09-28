@@ -52,6 +52,10 @@ describe('fechas ISO', () => {
     expect(toISODate(fromISODate('2026-09-25'))).toBe('2026-09-25');
   });
 
+  it('fromISODate crea la medianoche local, no la de UTC', () => {
+    expect(fromISODate('2026-09-25')).toEqual(new Date(2026, 8, 25));
+  });
+
   it('addDays cruza el cambio de mes', () => {
     expect(addDays('2026-01-31', 1)).toBe('2026-02-01');
   });
