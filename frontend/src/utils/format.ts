@@ -8,7 +8,7 @@ export function formatNumber(value: number, decimals = 0): string {
   }).format(value);
 }
 
-/** `1.850 kcal` */
+/** `1850 kcal` */
 export function formatKcal(value: number): string {
   return `${formatNumber(value)} kcal`;
 }

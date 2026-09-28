@@ -46,6 +46,7 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - Tailwind CSS — estilos, con enfoque mobile-first
 - React Router — navegación entre pantallas
 - vite-plugin-pwa — instalable en el móvil
+- Vitest — 38 tests de las funciones puras: fórmulas, macros y formato
 - pnpm — gestor de paquetes
 
 **Despliegue**
@@ -121,6 +122,18 @@ TEST_DATABASE_URL=postgresql://localhost/kaizen_test python -m pytest tests/ -q
 
 Conviene hacerlo antes de desplegar: así se encontró que las sesiones
 caducaban dos horas tarde en PostgreSQL.
+
+Los del frontend cubren las funciones puras de `src/utils`: las fórmulas
+nutricionales, el reparto de macros y el formato de números y fechas.
+
+```bash
+cd frontend
+pnpm test
+```
+
+Corren siempre con la hora de Madrid, fijada en `vite.config.ts`. En UTC, que
+es la zona de Docker y de cualquier CI, los fallos de fechas pasan sin que
+ningún test se entere.
 
 ### Hook de pre-commit (recomendado)
 
