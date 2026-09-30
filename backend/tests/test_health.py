@@ -1,4 +1,6 @@
-from app.config import normalize_database_url
+import pytest
+
+from app.config import normalize_database_url, positive_int
 
 
 class TestHealth:
@@ -20,3 +22,22 @@ class TestDatabaseUrl:
         fixed = normalize_database_url("postgres://u:p@h:5432/db")
 
         assert fixed == "postgresql://u:p@h:5432/db"
+
+
+class TestPositiveSetting:
+    def test_uses_the_default_when_unset(self, monkeypatch):
+        monkeypatch.delenv("KAIZEN_TEST_SETTING", raising=False)
+
+        assert positive_int("KAIZEN_TEST_SETTING", 5) == 5
+
+    def test_reads_the_environment(self, monkeypatch):
+        monkeypatch.setenv("KAIZEN_TEST_SETTING", "3")
+
+        assert positive_int("KAIZEN_TEST_SETTING", 5) == 3
+
+    @pytest.mark.parametrize("value", ["0", "-1"])
+    def test_refuses_to_start_below_one(self, monkeypatch, value):
+        monkeypatch.setenv("KAIZEN_TEST_SETTING", value)
+
+        with pytest.raises(RuntimeError, match="KAIZEN_TEST_SETTING"):
+            positive_int("KAIZEN_TEST_SETTING", 5)
