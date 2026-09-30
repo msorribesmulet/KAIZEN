@@ -22,7 +22,7 @@ from app.routers import log
 from app.routers import summary
 from app.models.profile import Profile
 from app.routers import profile
-from app.models.user import User, UserSession
+from app.models.user import FailedLogin, User, UserSession
 from app.routers import auth
 from app.spa import serve_spa
 

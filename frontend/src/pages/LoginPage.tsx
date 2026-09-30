@@ -16,6 +16,9 @@ function messageFor(cause: unknown, mode: Mode): string {
 
   if (cause.status === 401) return 'Correo o contraseña incorrectos.';
   if (cause.status === 409) return 'Ya existe una cuenta con ese correo.';
+  if (cause.status === 429) {
+    return 'Demasiados intentos fallidos. Espera unos minutos y vuelve a probar.';
+  }
   if (cause.status === 422) {
     return mode === 'register'
       ? `Revisa el correo y usa al menos ${MIN_PASSWORD_LENGTH} caracteres de contraseña.`

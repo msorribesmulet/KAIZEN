@@ -1,14 +1,17 @@
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import inspect
 from sqlmodel import select
 
 from app.config import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
     FRONTEND_URL,
+    LOGIN_MAX_FAILURES,
+    LOGIN_WINDOW_MINUTES,
     SESSION_COOKIE_NAME,
 )
-from app.models.user import UserSession
+from app.models.user import FailedLogin, UserSession
 from app.routers import auth as auth_router
 
 CREDENTIALS = {"email": "marc@ejemplo.com", "password": "secreto123"}
@@ -81,6 +84,130 @@ class TestLogin:
         anon_client.post("/auth/login", json=unknown)
 
         assert checked
+
+
+WRONG = {**CREDENTIALS, "password": "otra_cosa"}
+UNKNOWN = {"email": "nadie@ejemplo.com", "password": "secreto123"}
+
+
+def fail(client, credentials: dict, times: int = LOGIN_MAX_FAILURES) -> None:
+    for _ in range(times):
+        assert client.post("/auth/login", json=credentials).status_code == 401
+
+
+def age_failures(session, seconds: int) -> None:
+    for failure in session.exec(select(FailedLogin)).all():
+        failure.created_at = failure.created_at - timedelta(seconds=seconds)
+        session.add(failure)
+    session.commit()
+
+
+class TestLoginLimit:
+    def test_blocks_even_the_right_password_after_too_many_failures(self, anon_client):
+        register(anon_client)
+        anon_client.post("/auth/logout")
+        fail(anon_client, WRONG)
+
+        assert anon_client.post("/auth/login", json=CREDENTIALS).status_code == 429
+
+    def test_the_block_says_how_long_to_wait(self, anon_client):
+        fail(anon_client, UNKNOWN)
+
+        response = anon_client.post("/auth/login", json=UNKNOWN)
+        wait = int(response.headers["retry-after"])
+
+        assert 0 < wait <= LOGIN_WINDOW_MINUTES * 60
+
+    def test_one_failure_less_is_still_a_401(self, anon_client):
+        fail(anon_client, UNKNOWN, LOGIN_MAX_FAILURES - 1)
+
+        assert anon_client.post("/auth/login", json=UNKNOWN).status_code == 401
+
+    def test_an_unknown_email_is_blocked_like_a_real_one(self, anon_client):
+        fail(anon_client, UNKNOWN)
+
+        assert anon_client.post("/auth/login", json=UNKNOWN).status_code == 429
+
+    def test_changing_the_case_of_the_email_does_not_dodge_the_block(self, anon_client):
+        shouting = {**UNKNOWN, "email": UNKNOWN["email"].upper()}
+        for attempt in range(LOGIN_MAX_FAILURES):
+            fail(anon_client, shouting if attempt % 2 else UNKNOWN, 1)
+
+        assert anon_client.post("/auth/login", json=UNKNOWN).status_code == 429
+
+    def test_the_block_is_per_email(self, anon_client):
+        register(anon_client)
+        anon_client.post("/auth/logout")
+        fail(anon_client, UNKNOWN)
+
+        assert anon_client.post("/auth/login", json=CREDENTIALS).status_code == 200
+
+    def test_a_blocked_attempt_does_not_spend_bcrypt(self, anon_client, monkeypatch):
+        fail(anon_client, UNKNOWN)
+        checked = []
+        monkeypatch.setattr(
+            auth_router,
+            "verify_password",
+            lambda *args: bool(checked.append(args)) and False,
+        )
+
+        anon_client.post("/auth/login", json=UNKNOWN)
+
+        assert not checked
+
+    def test_a_successful_login_resets_the_count(self, anon_client):
+        register(anon_client)
+        anon_client.post("/auth/logout")
+        fail(anon_client, WRONG, LOGIN_MAX_FAILURES - 1)
+        anon_client.post("/auth/login", json=CREDENTIALS)
+        anon_client.post("/auth/logout")
+        fail(anon_client, WRONG, LOGIN_MAX_FAILURES - 1)
+
+        assert anon_client.post("/auth/login", json=CREDENTIALS).status_code == 200
+
+    def test_the_block_expires_with_the_window(self, anon_client, session):
+        register(anon_client)
+        anon_client.post("/auth/logout")
+        fail(anon_client, WRONG)
+        age_failures(session, LOGIN_WINDOW_MINUTES * 60 + 1)
+
+        assert anon_client.post("/auth/login", json=CREDENTIALS).status_code == 200
+
+    def test_old_failures_are_deleted_from_the_database(self, anon_client, session):
+        fail(anon_client, UNKNOWN)
+        age_failures(session, LOGIN_WINDOW_MINUTES * 60 + 1)
+
+        fail(anon_client, WRONG, 1)
+
+        stored = session.exec(select(FailedLogin)).all()
+        assert [failure.email for failure in stored] == [WRONG["email"]]
+
+    def test_the_attempt_is_recorded_before_checking_the_password(
+        self, anon_client, session, monkeypatch
+    ):
+        recorded = []
+
+        def checking(*_args) -> bool:
+            recorded.append(len(session.exec(select(FailedLogin)).all()))
+            return False
+
+        monkeypatch.setattr(auth_router, "verify_password", checking)
+
+        anon_client.post("/auth/login", json=UNKNOWN)
+
+        assert recorded == [1]
+
+    def test_blocked_attempts_do_not_extend_the_block(self, anon_client, session):
+        fail(anon_client, UNKNOWN)
+        for _ in range(3):
+            anon_client.post("/auth/login", json=UNKNOWN)
+
+        assert len(session.exec(select(FailedLogin)).all()) == LOGIN_MAX_FAILURES
+
+    def test_old_failures_are_found_through_an_index(self, session):
+        indexes = inspect(session.get_bind()).get_indexes(FailedLogin.__tablename__)
+
+        assert ["created_at"] in [index["column_names"] for index in indexes]
 
 
 class TestSession:

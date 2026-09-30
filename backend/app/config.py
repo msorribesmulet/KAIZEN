@@ -14,6 +14,13 @@ def normalize_database_url(url: str) -> str:
     return url
 
 
+def positive_int(name: str, default: int) -> int:
+    value = int(os.getenv(name, str(default)))
+    if value < 1:
+        raise RuntimeError(f"{name} tiene que valer 1 o más. Recibido: {value}")
+    return value
+
+
 STATIC_DIR = os.getenv("STATIC_DIR", "")
 DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", ""))
 
@@ -32,6 +39,9 @@ SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "kaizen_session")
 SESSION_DAYS = int(os.getenv("SESSION_DAYS", "7"))
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
+
+LOGIN_MAX_FAILURES = positive_int("LOGIN_MAX_FAILURES", 5)
+LOGIN_WINDOW_MINUTES = positive_int("LOGIN_WINDOW_MINUTES", 15)
 
 CSRF_COOKIE_NAME = os.getenv("CSRF_COOKIE_NAME", "kaizen_csrf")
 CSRF_HEADER_NAME = "X-CSRF-Token"

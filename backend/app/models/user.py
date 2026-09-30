@@ -8,8 +8,8 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def moment() -> Column:
-    return Column(DateTime(timezone=True), nullable=False)
+def moment(index: bool = False) -> Column:
+    return Column(DateTime(timezone=True), nullable=False, index=index)
 
 
 class User(SQLModel, table=True):
@@ -25,3 +25,9 @@ class UserSession(SQLModel, table=True):
     token_hash: str = Field(unique=True, index=True)
     expires_at: datetime = Field(sa_column=moment())
     created_at: datetime = Field(default_factory=utc_now, sa_column=moment())
+
+
+class FailedLogin(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(index=True, max_length=254)
+    created_at: datetime = Field(default_factory=utc_now, sa_column=moment(index=True))

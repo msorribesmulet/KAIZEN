@@ -37,7 +37,7 @@ El nombre viene de *kaizen* (改善), "mejora continua": pequeños cambios soste
 - SQLModel — ORM para trabajar con la base de datos desde Python
 - SQLite en desarrollo, PostgreSQL en producción — el mismo código sirve para los dos
 - bcrypt — cifrado de contraseñas
-- pytest — 126 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
+- pytest — 143 tests sobre los cálculos, los endpoints y el aislamiento entre usuarios
 - pylint y black — estilo y formato del código
 
 **Frontend**
@@ -258,6 +258,7 @@ Como la cookie de sesión es `httpOnly`, el navegador no puede leerla: al arranc
 **V4 — Cuentas de usuario** ✅
 - [x] Registro e inicio de sesión con contraseña cifrada
 - [x] Sesión en cookie `httpOnly`, con protección CSRF
+- [x] Bloqueo temporal tras varios intentos fallidos de inicio de sesión
 - [x] Cada usuario ve solo su perfil, sus registros y sus alimentos
 
 **Próximas versiones**
@@ -270,6 +271,7 @@ La PWA ya está configurada: la app es instalable en el móvil desde el navegado
 ### Limitaciones conocidas
 
 - **Sin recuperación de contraseña.** Si la olvidas, no hay forma de recuperar la cuenta. Tampoco se verifica el correo al registrarse.
+- **El límite de intentos de inicio de sesión es por correo, no por IP.** Frena probar contraseñas contra una cuenta, pero no probar una misma contraseña contra muchas. Y cualquiera que conozca tu correo puede bloquearte quince minutos.
 - **El catálogo de alimentos admite alimentos globales** (`user_id` nulo), pensados para los productos del scraping de V2. Todavía no hay ninguno ni forma de crearlos desde la API: hoy cada usuario solo ve los suyos.
 - **Los alimentos borrados no se eliminan.** Se ocultan del catálogo pero la fila se conserva, para que los días en que los comiste sigan cuadrando. No hay pantalla para restaurarlos ni para vaciar la papelera.
 - **Todavía no está desplegado.** El código está listo y probado contra PostgreSQL, pero no hay demo pública que visitar.
