@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import inspect
 from sqlmodel import select
 
 from app.config import (
@@ -202,6 +203,11 @@ class TestLoginLimit:
             anon_client.post("/auth/login", json=UNKNOWN)
 
         assert len(session.exec(select(FailedLogin)).all()) == LOGIN_MAX_FAILURES
+
+    def test_old_failures_are_found_through_an_index(self, session):
+        indexes = inspect(session.get_bind()).get_indexes(FailedLogin.__tablename__)
+
+        assert ["created_at"] in [index["column_names"] for index in indexes]
 
 
 class TestSession:
