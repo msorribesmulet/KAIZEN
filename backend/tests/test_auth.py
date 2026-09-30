@@ -102,9 +102,7 @@ def age_failures(session, seconds: int) -> None:
 
 
 class TestLoginLimit:
-    def test_blocks_even_the_right_password_after_too_many_failures(
-        self, anon_client
-    ):
+    def test_blocks_even_the_right_password_after_too_many_failures(self, anon_client):
         register(anon_client)
         anon_client.post("/auth/logout")
         fail(anon_client, WRONG)
@@ -129,9 +127,7 @@ class TestLoginLimit:
 
         assert anon_client.post("/auth/login", json=UNKNOWN).status_code == 429
 
-    def test_changing_the_case_of_the_email_does_not_dodge_the_block(
-        self, anon_client
-    ):
+    def test_changing_the_case_of_the_email_does_not_dodge_the_block(self, anon_client):
         shouting = {**UNKNOWN, "email": UNKNOWN["email"].upper()}
         for attempt in range(LOGIN_MAX_FAILURES):
             fail(anon_client, shouting if attempt % 2 else UNKNOWN, 1)
