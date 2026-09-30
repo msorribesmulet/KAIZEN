@@ -181,6 +181,28 @@ class TestLoginLimit:
         stored = session.exec(select(FailedLogin)).all()
         assert [failure.email for failure in stored] == [WRONG["email"]]
 
+    def test_the_attempt_is_recorded_before_checking_the_password(
+        self, anon_client, session, monkeypatch
+    ):
+        recorded = []
+
+        def checking(*_args) -> bool:
+            recorded.append(len(session.exec(select(FailedLogin)).all()))
+            return False
+
+        monkeypatch.setattr(auth_router, "verify_password", checking)
+
+        anon_client.post("/auth/login", json=UNKNOWN)
+
+        assert recorded == [1]
+
+    def test_blocked_attempts_do_not_extend_the_block(self, anon_client, session):
+        fail(anon_client, UNKNOWN)
+        for _ in range(3):
+            anon_client.post("/auth/login", json=UNKNOWN)
+
+        assert len(session.exec(select(FailedLogin)).all()) == LOGIN_MAX_FAILURES
+
 
 class TestSession:
     def test_without_session_me_is_401(self, anon_client):

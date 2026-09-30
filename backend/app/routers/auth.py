@@ -1,6 +1,5 @@
 import math
 from datetime import datetime, timedelta, timezone
-from typing import NoReturn
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from sqlmodel import Session, delete, select
@@ -31,31 +30,47 @@ router = APIRouter(prefix="/auth")
 LOGIN_WINDOW = timedelta(minutes=LOGIN_WINDOW_MINUTES)
 
 
-def _refuse_if_blocked(email: str, session: Session) -> None:
+def _record_attempt(email: str, session: Session) -> int | None:
+    cutoff = datetime.now(timezone.utc) - LOGIN_WINDOW
+    session.exec(
+        delete(FailedLogin)
+        .where(FailedLogin.created_at <= cutoff)
+        .execution_options(synchronize_session=False)
+    )
+    attempt = FailedLogin(email=email)
+    session.add(attempt)
+    session.commit()
+    session.refresh(attempt)
+    return attempt.id
+
+
+def _refuse_if_blocked(email: str, attempt_id: int | None, session: Session) -> None:
     now = datetime.now(timezone.utc)
-    failures = session.exec(
+    earlier = session.exec(
         select(FailedLogin.created_at)
-        .where(FailedLogin.email == email, FailedLogin.created_at > now - LOGIN_WINDOW)
+        .where(
+            FailedLogin.email == email,
+            FailedLogin.id != attempt_id,
+            FailedLogin.created_at > now - LOGIN_WINDOW,
+        )
         .order_by(FailedLogin.created_at)
     ).all()
-    if len(failures) < LOGIN_MAX_FAILURES:
+    if len(earlier) < LOGIN_MAX_FAILURES:
         return
 
-    unblocked_at = as_utc(failures[-LOGIN_MAX_FAILURES]) + LOGIN_WINDOW
+    session.exec(
+        delete(FailedLogin)
+        .where(FailedLogin.id == attempt_id)
+        .execution_options(synchronize_session=False)
+    )
+    session.commit()
+    unblocked_at = as_utc(earlier[-LOGIN_MAX_FAILURES]) + LOGIN_WINDOW
     wait = max(1, math.ceil((unblocked_at - now).total_seconds()))
     raise HTTPException(
         status_code=429,
         detail="Too many failed attempts",
         headers={"Retry-After": str(wait)},
     )
-
-
-def _reject_credentials(email: str, session: Session) -> NoReturn:
-    cutoff = datetime.now(timezone.utc) - LOGIN_WINDOW
-    session.exec(delete(FailedLogin).where(FailedLogin.created_at <= cutoff))
-    session.add(FailedLogin(email=email))
-    session.commit()
-    raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 def _open_session(user: User, response: Response, session: Session) -> None:
@@ -116,17 +131,22 @@ def login(
     response: Response,
     session: Session = Depends(get_session),
 ) -> User:
-    _refuse_if_blocked(credentials.email, session)
+    attempt_id = _record_attempt(credentials.email, session)
+    _refuse_if_blocked(credentials.email, attempt_id, session)
 
     user = session.exec(select(User).where(User.email == credentials.email)).first()
     if not user:
         verify_password(credentials.password, decoy_hash())
-        _reject_credentials(credentials.email, session)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not verify_password(credentials.password, user.password_hash):
-        _reject_credentials(credentials.email, session)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    session.exec(delete(FailedLogin).where(FailedLogin.email == credentials.email))
+    session.exec(
+        delete(FailedLogin)
+        .where(FailedLogin.email == credentials.email)
+        .execution_options(synchronize_session=False)
+    )
     _open_session(user, response, session)
 
     return user
